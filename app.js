@@ -14,6 +14,8 @@ const root=document.getElementById('ulilife-preview'), $=s=>root.querySelector(s
 const translations={
 "홈":["Home","ホーム","首页"],
 "설명회·교육":["Sessions & learning","説明会・教育","说明会与培训"],
+"설명회":["Sessions","説明会","说明会"],
+"교육":["Learning","教育","培训"],
 "사례·교육·설명회를 하나의 앱으로.":["Stories, learning and sessions in one app.","事例・学び・説明会をひとつのアプリで。","案例、学习与说明会，尽在一个应用。"],
 "찾아보고, 배우고, 공유하고.":["Explore, learn and share.","探して、学んで、共有する。","探索、学习、分享。"],
 "사업의 첫 만남부터 함께하는 앱, 올리링크.":["OlyLINK, with you from your first business connection.","ビジネスの最初の出会いから、ともに歩むOlyLINK。","OlyLINK，从初次了解事业开始与您同行。"],
