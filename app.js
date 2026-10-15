@@ -12,6 +12,22 @@ const {normalizeCases} = await import(new URL('./case-catalog.js?v=topics',docum
 const adminMode = new URLSearchParams(location.search).get('admin') === '1';
 const root=document.getElementById('ulilife-preview'), $=s=>root.querySelector(s);
 const translations={
+"홈":["Home","ホーム","首页"],
+"설명회·교육":["Sessions & learning","説明会・教育","说明会与培训"],
+"사례·교육·설명회를 하나의 앱으로.":["Stories, learning and sessions in one app.","事例・学び・説明会をひとつのアプリで。","案例、学习与说明会，尽在一个应用。"],
+"찾아보고, 배우고, 공유하고.":["Explore, learn and share.","探して、学んで、共有する。","探索、学习、分享。"],
+"사업의 첫 만남부터 함께하는 앱, 올리링크.":["OlyLINK, with you from your first business connection.","ビジネスの最初の出会いから、ともに歩むOlyLINK。","OlyLINK，从初次了解事业开始与您同行。"],
+"글로벌 체험 사례를 한눈에":["Global experiences at a glance","世界の体験談をひと目で","全球体验案例，一目了然"],
+"전 세계의 체험 이야기를 관심 주제별로.":["Explore personal experiences from around the world by topic.","世界の体験談を関心のあるテーマから。","按感兴趣的主题浏览世界各地的体验故事。"],
+"연구와 교육자료를 손안에":["Research and learning at your fingertips","研究・教育資料を手元に","研究与学习资料，触手可及"],
+"연구논문·임상자료를 바탕으로 한 사업 교육자료까지.":["Including business learning materials based on research papers and clinical data.","研究論文・臨床資料に基づくビジネス教育資料まで。","包括基于研究论文与临床资料的事业培训材料。"],
+"온라인 설명회도 앱에서":["Online sessions, right from the app","オンライン説明会もアプリから","在线说明会，也能从应用参与"],
+"일정을 확인하고 구글 미팅으로 바로 참여.":["Check the schedule and join through Google Meet.","日程を確認してGoogle Meetで参加。","查看日程，通过Google Meet直接参与。"],
+"궁금할 땐 카카오톡으로":["Questions? Connect on KakaoTalk","質問はカカオトークで","有疑问，通过KakaoTalk联系"],
+"시안 킴과 소통하며 함께 시작하기.":["Connect with Seean Kim and get started together.","Seean Kimと話して、一緒に始めましょう。","与Seean Kim交流，一起开始。"],
+"앱으로 알아보고 → 톡으로 연결하고 → 함께 사업을 시작하세요.":["Explore in the app → Connect on KakaoTalk → Start your business together.","アプリで知る → トークでつながる → ともにビジネスを始める。","通过应用了解 → 通过聊天连接 → 一起开启事业。"],
+"카카오톡으로 시작하기":["Get started on KakaoTalk","カカオトークで始める","通过KakaoTalk开始"],
+
  '이용자 자료실':['Library preview','利用者の資料室','用户资料库'],
  '선생님 관리자':['Admin preview','管理者画面','管理员预览'],
  '올리라이프비즈':['Olyliifebiz','Olyliifebiz','Olyliifebiz'],
@@ -143,7 +159,7 @@ const knownLocales=['ko','en','ja','zh'];
 let locale='ko';try { const saved=localStorage.getItem('olylife_locale');if(knownLocales.includes(saved))locale=saved; } catch {}
 let experiences=[],experiencesLoaded=false,experiencesLoading=false,experiencesFailed=false,experienceCategory='';
 const defaultExperienceCategories=['치매','파킨슨','허리·요통','소화기','통증'];
-let materials=[],meetings=[],auth={initialized:!!backend,authenticated:false},section='library',editId=null,meetingEditId=null,detailId=null;
+let materials=[],meetings=[],auth={initialized:!!backend,authenticated:false},section='home',editId=null,meetingEditId=null,detailId=null;
 const textNodes=[],attrs=[];
 const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
 while(walker.nextNode()){const node=walker.currentNode;if(node.parentElement.closest('script,style,option'))continue;const key=node.textContent.trim();if(translations[key])textNodes.push({node,key});}
@@ -223,6 +239,6 @@ $('#ul-import-local').addEventListener('click',async()=>{
  try{const {data,error}=await backend.client.auth.getSession();if(error)throw error;const res=await fetch('/api/migrate-cloud',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accessToken:data.session?.access_token})});const result=await res.json();if(!res.ok)throw new Error(result.error);await refresh();notice.textContent='완료: 자료 '+result.materials+'개, 미팅 '+result.meetings+'개를 옮겼습니다.';}
  catch(error){notice.textContent=error.message;}finally{button.disabled=false;}
 });
-show(adminMode?'auth':'library');applyLocale();refresh().catch(error=>{$('#ul-list').textContent=error.message;});
+show(adminMode?'auth':'home');applyLocale();refresh().catch(error=>{$('#ul-list').textContent=error.message;});
 })();
 
