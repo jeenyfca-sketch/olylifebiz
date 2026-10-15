@@ -119,23 +119,38 @@ Object.assign(translations, {
  'PDF 최대 크기는 15MB입니다.':['Maximum PDF size is 15MB.','PDFの最大サイズは15MBです。','PDF最大为15MB。'],
  '등록된 PDF를 유지합니다. 새 파일을 선택하면 교체됩니다.':['The current PDF is kept unless you choose a replacement.','新しいファイルを選択すると現在のPDFを置き換えます。','选择新文件时替换现有PDF。'],
 });
+Object.assign(translations,{
+ '글로벌':['Global','グローバル','全球'], '체험 사례':['Experiences','体験談','体验案例'],
+ '글로벌 체험 사례':['Global experiences','世界の体験談','全球体验案例'],
+ '사례 검색':['Search experiences','体験談を検索','搜索体验案例'],
+ '영상 제목·국가 검색':['Search video title or country','動画タイトル・国で検索','搜索视频标题或国家'],
+ '국가':['Country','国','国家'], '영상 언어':['Video language','動画の言語','视频语言'],
+ '전체 국가':['All countries','すべての国','所有国家'], '전체 언어':['All languages','すべての言語','所有语言'],
+ '등록된 영상이 없습니다.':['No videos added yet.','登録された動画はありません。','尚无视频。'],
+ '조건에 맞는 영상이 없습니다.':['No matching videos.','該当する動画はありません。','没有匹配的视频。'],
+ '영상 보기':['Watch video','動画を見る','观看视频'], '링크 복사':['Copy link','リンクをコピー','复制链接'],
+ '링크를 복사했습니다.':['Link copied.','リンクをコピーしました。','链接已复制。'],
+ '영상 목록을 불러오는 중입니다.':['Loading videos…','動画を読み込み中…','正在加载视频…'],
+ '영상 목록을 불러오지 못했습니다.':['Could not load videos.','動画を読み込めませんでした。','无法加载视频。']
+});
 const t=key=>locale==='ko'?key:(translations[key]?.[{en:0,ja:1,zh:2}[locale]]??key);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const knownLocales=['ko','en','ja','zh'];
 let locale='ko';try { const saved=localStorage.getItem('olylife_locale');if(knownLocales.includes(saved))locale=saved; } catch {}
+let experiences=[],experiencesLoaded=false,experiencesLoading=false,experiencesFailed=false;
 let materials=[],meetings=[],auth={initialized:!!backend,authenticated:false},section='library',editId=null,meetingEditId=null,detailId=null;
 const textNodes=[],attrs=[];
 const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
 while(walker.nextNode()){const node=walker.currentNode;if(node.parentElement.closest('script,style,option'))continue;const key=node.textContent.trim();if(translations[key])textNodes.push({node,key});}
 root.querySelectorAll('[placeholder],[aria-label]').forEach(el=>{for(const name of ['placeholder','aria-label']){const key=el.getAttribute(name);if(translations[key])attrs.push({el,name,key});}});
 async function api(url,body){if(backend)return backend.api(url,body);const res=await fetch(url,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{});const data=await res.json();if(!res.ok){const error=new Error(data.error||'Request failed');error.status=res.status;throw error;}return data;}
-function show(value){if(!adminMode&&['auth','admin','meeting-admin'].includes(value))value='library';section=value;if(section==='meetings'&&auth.authenticated)section='meeting-admin';if(['admin','meeting-admin'].includes(section)&&!auth.authenticated)section='auth';root.querySelectorAll('[data-panel]').forEach(p=>p.hidden=p.dataset.panel!==section);root.querySelectorAll('[data-section]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.section===section)));}
+function show(value){if(value==='experiences')loadExperiences();if(!adminMode&&['auth','admin','meeting-admin'].includes(value))value='library';section=value;if(section==='meetings'&&auth.authenticated)section='meeting-admin';if(['admin','meeting-admin'].includes(section)&&!auth.authenticated)section='auth';root.querySelectorAll('[data-panel]').forEach(p=>p.hidden=p.dataset.panel!==section);root.querySelectorAll('[data-section]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.section===section)));}
 function applyLocale(){
 $('#ul-email-label').hidden=!backend;
 $('#ul-auth-form').elements.email.required=!!backend;
 $('#ul-auth-form').elements.password.minLength=backend?6:10;
 $('#ul-import-local').hidden=!backend||!auth.authenticated||!['127.0.0.1','localhost'].includes(location.hostname);
-root.lang=locale;document.documentElement.lang=locale;$('#ul-locale').value=locale;textNodes.forEach(({node,key})=>node.textContent=t(key));attrs.forEach(({el,name,key})=>el.setAttribute(name,t(key)));$('#ul-auth-title').textContent=t(auth.initialized?'관리자 로그인':'관리자 비밀번호 설정');$('#ul-auth-submit').textContent=t(auth.initialized?'로그인':'설정하고 시작하기');$('#ul-auth-description').textContent=t(auth.initialized?'설정한 관리자 비밀번호를 입력하세요.':'비밀번호를 10자 이상으로 정하세요. 이 컴퓨터의 관리자 계정에만 사용됩니다.');$('#ul-auth-form').elements.password.autocomplete=auth.initialized?'current-password':'new-password';$('#ul-form-title').textContent=t(editId?'자료 수정':'새 자료 등록');$('#ul-save').textContent=t(editId?'저장하기':'등록하기');$('#ul-file-label').textContent=t(editId?'등록된 PDF를 유지합니다. 새 파일을 선택하면 교체됩니다.':'PDF 최대 15MB · 이 컴퓨터에 저장합니다.');if(backend){$('#ul-auth-description').textContent=locale==='ko'?'수파베이스에서 만든 관리자 이메일과 비밀번호를 입력하세요.':'Sign in with your administrator email and password.';$('#ul-file-label').textContent=locale==='ko'?'PDF 최대 15MB':'PDF · Max 15MB';}$('#ul-admin-nav').hidden=!auth.authenticated;$('#ul-login').hidden=!adminMode||auth.authenticated;$('#ul-logout').hidden=!auth.authenticated;render();renderMeetings();if(detailId)detail(detailId);}
+root.lang=locale;document.documentElement.lang=locale;$('#ul-locale').value=locale;textNodes.forEach(({node,key})=>node.textContent=t(key));attrs.forEach(({el,name,key})=>el.setAttribute(name,t(key)));$('#ul-auth-title').textContent=t(auth.initialized?'관리자 로그인':'관리자 비밀번호 설정');$('#ul-auth-submit').textContent=t(auth.initialized?'로그인':'설정하고 시작하기');$('#ul-auth-description').textContent=t(auth.initialized?'설정한 관리자 비밀번호를 입력하세요.':'비밀번호를 10자 이상으로 정하세요. 이 컴퓨터의 관리자 계정에만 사용됩니다.');$('#ul-auth-form').elements.password.autocomplete=auth.initialized?'current-password':'new-password';$('#ul-form-title').textContent=t(editId?'자료 수정':'새 자료 등록');$('#ul-save').textContent=t(editId?'저장하기':'등록하기');$('#ul-file-label').textContent=t(editId?'등록된 PDF를 유지합니다. 새 파일을 선택하면 교체됩니다.':'PDF 최대 15MB · 이 컴퓨터에 저장합니다.');if(backend){$('#ul-auth-description').textContent=locale==='ko'?'수파베이스에서 만든 관리자 이메일과 비밀번호를 입력하세요.':'Sign in with your administrator email and password.';$('#ul-file-label').textContent=locale==='ko'?'PDF 최대 15MB':'PDF · Max 15MB';}$('#ul-admin-nav').hidden=!auth.authenticated;$('#ul-login').hidden=!adminMode||auth.authenticated;$('#ul-logout').hidden=!auth.authenticated;$('footer').hidden=$('#ul-login').hidden&&$('#ul-logout').hidden;render();renderMeetings();renderExperiences();if(detailId)detail(detailId);}
 function render(){const panel=$('#ul-detail');$('#ul-list').after(panel);const q=$('#ul-search').value.trim().toLowerCase();const list=materials.filter(x=>!q||x.title.toLowerCase().includes(q));$('#ul-count').textContent=locale==='ko'?'자료 '+list.length+'개':locale==='en'?list.length+' materials':locale==='ja'?'資料 '+list.length+'件':'资料 '+list.length+'份';$('#ul-list').innerHTML=list.length?list.map(x=>'<article class="ul-item"><span class="ul-tag">'+esc(x.language)+'</span><h3>'+esc(x.title)+'</h3><button type="button" data-view="'+esc(x.id)+'" aria-expanded="false" aria-controls="ul-detail">'+t('자료 보기')+'</button></article>').join(''):'<p class="ul-sub">'+t(q?'검색 조건에 맞는 자료가 없습니다.':'등록된 자료가 없습니다.')+'</p>';$('#ul-admin-list').innerHTML=auth.authenticated?materials.map(x=>'<article class="ul-item"><h3>'+esc(x.title)+'</h3><div class="ul-meta">'+esc(x.language)+'</div><button type="button" data-edit="'+esc(x.id)+'">'+t('수정하기')+'</button></article>').join(''):'';}
 function detail(id,toggle=false){
  const x=materials.find(x=>x.id===id);if(!x)return;
@@ -177,6 +192,24 @@ meetingLinkInput.addEventListener('blur',()=>{meetingLinkInput.value=normalizeMe
 meetingLinkInput.addEventListener('paste',e=>{const pasted=e.clipboardData?.getData('text');if(pasted){e.preventDefault();meetingLinkInput.value=normalizeMeetingLink(pasted);meetingLinkInput.dispatchEvent(new Event('input',{bubbles:true}));}});
 root.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.meetingEdit){const x=meetings.find(x=>x.id===b.dataset.meetingEdit);meetingEditId=x.id;const form=$('#ul-meeting-form');for(const key of ['title','language','link'])form.elements.namedItem(key).value=x[key];form.elements.starts.value=new Date(new Date(x.starts).getTime()+9*3600000).toISOString().slice(0,16);$('#ul-meeting-cancel').hidden=false;$('#ul-meeting-notice').textContent='';renderMeetings();form.scrollIntoView({block:'start',behavior:'smooth'});}if(b.id==='ul-meeting-cancel')resetMeeting();if(b.id==='ul-logout')resetMeeting();});
 $('#ul-meeting-form').addEventListener('submit',async e=>{e.preventDefault();const form=e.target,button=$('#ul-meeting-save');button.disabled=true;button.textContent=t('저장 중…');$('#ul-meeting-notice').textContent='';try{const input={};for(const key of ['title','starts','language','link'])input[key]=form.elements.namedItem(key).value;input.link=normalizeMeetingLink(input.link);form.elements.link.value=input.link;if(meetingEditId)input.id=meetingEditId;await api('/api/meetings',input);await refresh();resetMeeting();$('#ul-meeting-notice').textContent=t('미팅을 저장했습니다.');}catch(error){if(error.status===401){auth.authenticated=false;applyLocale();show('auth');$('#ul-auth-notice').textContent=t(error.message);}else $('#ul-meeting-notice').textContent=t(error.message);}finally{button.disabled=false;button.textContent=t(meetingEditId?'저장하기':'등록하기');}});
+async function loadExperiences(){
+ if(experiencesLoaded||experiencesLoading)return;
+ experiencesLoading=true;experiencesFailed=false;renderExperiences();
+ try{const response=await fetch(new URL('./experiences.json',document.baseURI));if(!response.ok)throw new Error('catalog');const data=await response.json();if(!Array.isArray(data))throw new Error('catalog');
+ experiences=data.filter(x=>{try{const url=new URL(x.url);return typeof x.id==='string'&&typeof x.title==='string'&&typeof x.country==='string'&&typeof x.language==='string'&&url.protocol==='https:'&&!url.username&&!url.password;}catch{return false;}});experiencesLoaded=true;
+ }catch{experiencesFailed=true;}finally{experiencesLoading=false;renderExperiences();}
+}
+function renderExperiences(){
+ const country=$('#ul-experience-country'),language=$('#ul-experience-language');
+ for(const [select,key,label] of [[country,'country','전체 국가'],[language,'language','전체 언어']]){const selected=select.value;select.innerHTML='<option value="">'+t(label)+'</option>'+[...new Set(experiences.map(x=>x[key]).filter(Boolean))].sort().map(value=>'<option value="'+esc(value)+'">'+esc(value)+'</option>').join('');select.value=selected;}
+ const query=$('#ul-experience-search').value.trim().toLowerCase();
+ const list=experiences.filter(x=>(!country.value||x.country===country.value)&&(!language.value||x.language===language.value)&&(!query||[x.title,x.country,x.summary].join(' ').toLowerCase().includes(query)));
+ $('#ul-experience-list').innerHTML=experiencesLoading?'<p class="ul-sub">'+t('영상 목록을 불러오는 중입니다.')+'</p>':experiencesFailed?'<p class="ul-sub">'+t('영상 목록을 불러오지 못했습니다.')+'</p>':list.length?list.map(x=>'<article class="ul-item"><span class="ul-tag">'+esc([x.country,x.language].filter(Boolean).join(' · '))+'</span><h3>'+esc(x.title)+'</h3>'+(x.summary?'<p class="ul-meta">'+esc(x.summary)+'</p>':'')+'<a class="ul-kakao-link" href="'+esc(x.url)+'" target="_blank" rel="noopener noreferrer">'+t('영상 보기')+'</a><button type="button" data-copy-experience="'+esc(x.id)+'">'+t('링크 복사')+'</button></article>').join(''):'<p class="ul-sub">'+t(experiences.length?'조건에 맞는 영상이 없습니다.':'등록된 영상이 없습니다.')+'</p>';
+}
+$('#ul-experience-search').addEventListener('input',renderExperiences);
+$('#ul-experience-country').addEventListener('change',renderExperiences);
+$('#ul-experience-language').addEventListener('change',renderExperiences);
+root.addEventListener('click',async e=>{const button=e.target.closest('[data-copy-experience]');if(!button)return;const item=experiences.find(x=>x.id===button.dataset.copyExperience);if(!item)return;try{await navigator.clipboard.writeText(item.url);button.textContent=t('링크를 복사했습니다.');}catch{button.textContent=item.url;}});
 $('#ul-import-local').addEventListener('click',async()=>{
  const button=$('#ul-import-local'),notice=$('#ul-import-notice');button.disabled=true;notice.textContent='기존 자료와 미팅을 옮기는 중입니다…';
  try{const {data,error}=await backend.client.auth.getSession();if(error)throw error;const res=await fetch('/api/migrate-cloud',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accessToken:data.session?.access_token})});const result=await res.json();if(!res.ok)throw new Error(result.error);await refresh();notice.textContent='완료: 자료 '+result.materials+'개, 미팅 '+result.meetings+'개를 옮겼습니다.';}
