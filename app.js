@@ -8,6 +8,7 @@ function normalizeMeetingLink(raw) {
 }
 (async () => {
 const backend = await window.olyCloudReady;
+const {normalizeCases} = await import(new URL('./case-catalog.js?v=topics',document.baseURI));
 const adminMode = new URLSearchParams(location.search).get('admin') === '1';
 const root=document.getElementById('ulilife-preview'), $=s=>root.querySelector(s);
 const translations={
@@ -120,24 +121,28 @@ Object.assign(translations, {
  '등록된 PDF를 유지합니다. 새 파일을 선택하면 교체됩니다.':['The current PDF is kept unless you choose a replacement.','新しいファイルを選択すると現在のPDFを置き換えます。','选择新文件时替换现有PDF。'],
 });
 Object.assign(translations,{
+ '사례 분류':['Experience topics','体験談の分類','体验案例分类'], '전체':['All','すべて','全部'],
+ '치매':['Dementia','認知症','认知症'], '파킨슨':['Parkinson’s','パーキンソン','帕金森'],
+ '허리·요통':['Lower back','腰痛','腰痛'], '소화기':['Digestion','消化器','消化系统'], '통증':['Pain','痛み','疼痛'],
  '글로벌':['Global','グローバル','全球'], '체험 사례':['Experiences','体験談','体验案例'],
  '글로벌 체험 사례':['Global experiences','世界の体験談','全球体验案例'],
  '사례 검색':['Search experiences','体験談を検索','搜索体验案例'],
- '영상 제목·국가 검색':['Search video title or country','動画タイトル・国で検索','搜索视频标题或国家'],
- '국가':['Country','国','国家'], '영상 언어':['Video language','動画の言語','视频语言'],
+ '제목·국가·요약 검색':['Search title, country or summary','タイトル・国・要約を検索','搜索标题、国家或摘要'],
+ '국가':['Country','国','国家'], '원문 언어':['Source language','原文の言語','原文语言'],
  '전체 국가':['All countries','すべての国','所有国家'], '전체 언어':['All languages','すべての言語','所有语言'],
- '등록된 영상이 없습니다.':['No videos added yet.','登録された動画はありません。','尚无视频。'],
- '조건에 맞는 영상이 없습니다.':['No matching videos.','該当する動画はありません。','没有匹配的视频。'],
- '영상 보기':['Watch video','動画を見る','观看视频'], '링크 복사':['Copy link','リンクをコピー','复制链接'],
+ '등록된 사례가 없습니다.':['No experiences added yet.','登録された体験談はありません。','尚无体验案例。'],
+ '조건에 맞는 사례가 없습니다.':['No matching experiences.','該当する体験談はありません。','没有匹配的体验案例。'],
+ '원문 보기':['View original','原文を見る','查看原文'], '한국어 요약':['Korean summary','韓国語の要約','韩语摘要'], '링크 복사':['Copy link','リンクをコピー','复制链接'],
  '링크를 복사했습니다.':['Link copied.','リンクをコピーしました。','链接已复制。'],
- '영상 목록을 불러오는 중입니다.':['Loading videos…','動画を読み込み中…','正在加载视频…'],
- '영상 목록을 불러오지 못했습니다.':['Could not load videos.','動画を読み込めませんでした。','无法加载视频。']
+ '사례를 불러오는 중입니다.':['Loading experiences…','体験談を読み込み中…','正在加载体验案例…'],
+ '사례를 불러오지 못했습니다.':['Could not load experiences.','体験談を読み込めませんでした。','无法加载体验案例。']
 });
 const t=key=>locale==='ko'?key:(translations[key]?.[{en:0,ja:1,zh:2}[locale]]??key);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const knownLocales=['ko','en','ja','zh'];
 let locale='ko';try { const saved=localStorage.getItem('olylife_locale');if(knownLocales.includes(saved))locale=saved; } catch {}
-let experiences=[],experiencesLoaded=false,experiencesLoading=false,experiencesFailed=false;
+let experiences=[],experiencesLoaded=false,experiencesLoading=false,experiencesFailed=false,experienceCategory='';
+const defaultExperienceCategories=['치매','파킨슨','허리·요통','소화기','통증'];
 let materials=[],meetings=[],auth={initialized:!!backend,authenticated:false},section='library',editId=null,meetingEditId=null,detailId=null;
 const textNodes=[],attrs=[];
 const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
@@ -196,20 +201,23 @@ async function loadExperiences(){
  if(experiencesLoaded||experiencesLoading)return;
  experiencesLoading=true;experiencesFailed=false;renderExperiences();
  try{const response=await fetch(new URL('./experiences.json',document.baseURI));if(!response.ok)throw new Error('catalog');const data=await response.json();if(!Array.isArray(data))throw new Error('catalog');
- experiences=data.filter(x=>{try{const url=new URL(x.url);return typeof x.id==='string'&&typeof x.title==='string'&&typeof x.country==='string'&&typeof x.language==='string'&&url.protocol==='https:'&&!url.username&&!url.password;}catch{return false;}});experiencesLoaded=true;
+ experiences=normalizeCases(data);experiencesLoaded=true;
  }catch{experiencesFailed=true;}finally{experiencesLoading=false;renderExperiences();}
 }
 function renderExperiences(){
+ const categories=[...new Set([...defaultExperienceCategories,...experiences.flatMap(x=>x.categories)])];
+ $('#ul-experience-categories').innerHTML=[['','전체'],...categories.map(value=>[value,value])].map(([value,label])=>'<button type="button" data-case-category="'+esc(value)+'" aria-pressed="'+String(value===experienceCategory)+'">'+esc(t(label))+'</button>').join('');
+
  const country=$('#ul-experience-country'),language=$('#ul-experience-language');
  for(const [select,key,label] of [[country,'country','전체 국가'],[language,'language','전체 언어']]){const selected=select.value;select.innerHTML='<option value="">'+t(label)+'</option>'+[...new Set(experiences.map(x=>x[key]).filter(Boolean))].sort().map(value=>'<option value="'+esc(value)+'">'+esc(value)+'</option>').join('');select.value=selected;}
  const query=$('#ul-experience-search').value.trim().toLowerCase();
- const list=experiences.filter(x=>(!country.value||x.country===country.value)&&(!language.value||x.language===language.value)&&(!query||[x.title,x.country,x.summary].join(' ').toLowerCase().includes(query)));
- $('#ul-experience-list').innerHTML=experiencesLoading?'<p class="ul-sub">'+t('영상 목록을 불러오는 중입니다.')+'</p>':experiencesFailed?'<p class="ul-sub">'+t('영상 목록을 불러오지 못했습니다.')+'</p>':list.length?list.map(x=>'<article class="ul-item"><span class="ul-tag">'+esc([x.country,x.language].filter(Boolean).join(' · '))+'</span><h3>'+esc(x.title)+'</h3>'+(x.summary?'<p class="ul-meta">'+esc(x.summary)+'</p>':'')+'<a class="ul-kakao-link" href="'+esc(x.url)+'" target="_blank" rel="noopener noreferrer">'+t('영상 보기')+'</a><button type="button" data-copy-experience="'+esc(x.id)+'">'+t('링크 복사')+'</button></article>').join(''):'<p class="ul-sub">'+t(experiences.length?'조건에 맞는 영상이 없습니다.':'등록된 영상이 없습니다.')+'</p>';
+ const list=experiences.filter(x=>(!experienceCategory||x.categories.includes(experienceCategory))&&(!country.value||x.country===country.value)&&(!language.value||x.language===language.value)&&(!query||[x.title,x.country,x.summary,...x.categories].join(' ').toLowerCase().includes(query)));
+ $('#ul-experience-list').innerHTML=experiencesLoading?'<p class="ul-sub">'+t('사례를 불러오는 중입니다.')+'</p>':experiencesFailed?'<p class="ul-sub">'+t('사례를 불러오지 못했습니다.')+'</p>':list.length?list.map(x=>'<article class="ul-item"><span class="ul-tag">'+esc([x.country,x.language].filter(Boolean).join(' · '))+'</span><h3>'+esc(x.title)+'</h3>'+(x.summary?'<span class="ul-tag">'+t('한국어 요약')+'</span><p class="ul-case-summary">'+esc(x.summary)+'</p>':'')+(x.url?'<a class="ul-kakao-link" href="'+esc(x.url)+'" target="_blank" rel="noopener noreferrer">'+t('원문 보기')+'</a><button type="button" data-copy-experience="'+esc(x.id)+'">'+t('링크 복사')+'</button>':'')+'</article>').join(''):'<p class="ul-sub">'+t(experiences.length?'조건에 맞는 사례가 없습니다.':'등록된 사례가 없습니다.')+'</p>';
 }
 $('#ul-experience-search').addEventListener('input',renderExperiences);
 $('#ul-experience-country').addEventListener('change',renderExperiences);
 $('#ul-experience-language').addEventListener('change',renderExperiences);
-root.addEventListener('click',async e=>{const button=e.target.closest('[data-copy-experience]');if(!button)return;const item=experiences.find(x=>x.id===button.dataset.copyExperience);if(!item)return;try{await navigator.clipboard.writeText(item.url);button.textContent=t('링크를 복사했습니다.');}catch{button.textContent=item.url;}});
+root.addEventListener('click',async e=>{const category=e.target.closest('[data-case-category]');if(category){experienceCategory=category.dataset.caseCategory;renderExperiences();return;}const button=e.target.closest('[data-copy-experience]');if(!button)return;const item=experiences.find(x=>x.id===button.dataset.copyExperience);if(!item)return;try{await navigator.clipboard.writeText(item.url);button.textContent=t('링크를 복사했습니다.');}catch{button.textContent=item.url;}});
 $('#ul-import-local').addEventListener('click',async()=>{
  const button=$('#ul-import-local'),notice=$('#ul-import-notice');button.disabled=true;notice.textContent='기존 자료와 미팅을 옮기는 중입니다…';
  try{const {data,error}=await backend.client.auth.getSession();if(error)throw error;const res=await fetch('/api/migrate-cloud',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accessToken:data.session?.access_token})});const result=await res.json();if(!res.ok)throw new Error(result.error);await refresh();notice.textContent='완료: 자료 '+result.materials+'개, 미팅 '+result.meetings+'개를 옮겼습니다.';}

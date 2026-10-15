@@ -23,9 +23,9 @@
           <div id="ul-meetings" aria-live="polite"></div>
         </div>
         <div data-panel="experiences" hidden>
- <h2>글로벌 체험 사례</h2>
- <label><span>사례 검색</span><input id="ul-experience-search" type="search" placeholder="영상 제목·국가 검색"></label>
- <div class="ul-filters"><label><span>국가</span><select id="ul-experience-country"><option value="">전체 국가</option></select></label><label><span>영상 언어</span><select id="ul-experience-language"><option value="">전체 언어</option></select></label></div>
+ <h2>글로벌 체험 사례</h2><div id="ul-experience-categories" class="ul-category-filter" role="group" aria-label="사례 분류"></div>
+ <label><span>사례 검색</span><input id="ul-experience-search" type="search" placeholder="제목·국가·요약 검색"></label>
+ <div class="ul-filters"><label><span>국가</span><select id="ul-experience-country"><option value="">전체 국가</option></select></label><label><span>원문 언어</span><select id="ul-experience-language"><option value="">전체 언어</option></select></label></div>
  <div id="ul-experience-list" aria-live="polite"></div>
  </div><div data-panel="auth" hidden>
  <h2 id="ul-auth-title">관리자 로그인</h2>
@@ -105,6 +105,10 @@
 #ulilife-preview .ul-listhead {display:flex;justify-content:space-between;font-size:12px;color:var(--ul-muted);margin:10px 0 14px}
 #ulilife-preview .ul-item {background:var(--ul-paper);padding:16px;margin-bottom:12px;border-radius:var(--ul-radius);border:1px solid var(--ul-line)}
 #ulilife-preview .ul-item h3 {margin:8px 0;font-size:16px;line-height:1.5;overflow-wrap:anywhere}
+#ulilife-preview .ul-category-filter {display:flex;flex-wrap:wrap;gap:8px;margin:16px 0;}
+#ulilife-preview .ul-category-filter button {min-height:40px;padding:8px 12px;font-size:13px;}
+#ulilife-preview .ul-category-filter [aria-pressed="true"] {background:var(--ul-orange);border-color:var(--ul-orange);color:var(--ul-orange-ink);}
+#ulilife-preview .ul-case-summary {font-size:14px;line-height:1.75;white-space:pre-line;overflow-wrap:anywhere;}
 #ulilife-preview .ul-meta {font-size:12px;color:var(--ul-muted);line-height:1.6;overflow-wrap:anywhere}
 #ulilife-preview .ul-tag {font-size:11px;display:inline-block;background:var(--ul-orange);padding:4px 7px;border-radius:6px;color:var(--ul-orange-ink)}
 #ulilife-preview .ul-item button {width:100%;margin-top:14px;text-align:center;background:var(--ul-orange);color:var(--ul-orange-ink);border-color:var(--ul-orange)}
@@ -134,4 +138,4 @@
 #ulilife-preview input:disabled {opacity:.6;}
 </style>
 
-<script src="./cloud.js"></script><script src="./app.js?v=1800ffbf40e5"></script></body></html>
+<script src="./cloud.js"></script><script src="./app.js?v=91d866a8819a"></script></body></html>
