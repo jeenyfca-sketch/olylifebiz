@@ -8,11 +8,12 @@ function normalizeMeetingLink(raw) {
 }
 (async () => {
 const backend = await window.olyCloudReady;
-const {normalizeCases} = await import(new URL('./case-catalog.js?v=topics',document.baseURI));
+const {normalizeCases,importCaseRows} = await import(new URL('./case-catalog.js?v=private1',document.baseURI));
 const adminMode = new URLSearchParams(location.search).get('admin') === '1';
 const root=document.getElementById('ulilife-preview'), $=s=>root.querySelector(s);
 const translations={
 "홈":["Home","ホーム","首页"],
+"교육·설명회를 하나의 앱으로.":["Learning and sessions in one app.","学び・説明会をひとつのアプリで。","学习与说明会，尽在一个应用。"],
 "설명회·교육":["Sessions & learning","説明会・教育","说明会与培训"],
 "설명회":["Sessions","説明会","说明会"],
 "교육":["Learning","教育","培训"],
@@ -159,15 +160,15 @@ const t=key=>locale==='ko'?key:(translations[key]?.[{en:0,ja:1,zh:2}[locale]]??k
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const knownLocales=['ko','en','ja','zh'];
 let locale='ko';try { const saved=localStorage.getItem('olylife_locale');if(knownLocales.includes(saved))locale=saved; } catch {}
-let experiences=[],experiencesLoaded=false,experiencesLoading=false,experiencesFailed=false,experienceCategory='';
-const defaultExperienceCategories=['치매','파킨슨','허리·요통','소화기','통증'];
+let experiences=[],experiencesLoaded=false,experiencesLoading=false,experiencesFailed=false,experienceCategory='',caseEditId=null,caseRequest=0;
+const defaultExperienceCategories=['관절·무릎','허리·등','어깨·목','보행·다리','파킨슨 관련','기억·인지','수면','신경·저림·경련','순환·붓기','혈압·혈당·대사','비뇨·야간뇨','기분·활력','소화·배변','눈·시야','피부','두통','사용감·불편','사용 편의'];
 let materials=[],meetings=[],auth={initialized:!!backend,authenticated:false},section='home',editId=null,meetingEditId=null,detailId=null;
 const textNodes=[],attrs=[];
 const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
 while(walker.nextNode()){const node=walker.currentNode;if(node.parentElement.closest('script,style,option'))continue;const key=node.textContent.trim();if(translations[key])textNodes.push({node,key});}
 root.querySelectorAll('[placeholder],[aria-label]').forEach(el=>{for(const name of ['placeholder','aria-label']){const key=el.getAttribute(name);if(translations[key])attrs.push({el,name,key});}});
 async function api(url,body){if(backend)return backend.api(url,body);const res=await fetch(url,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{});const data=await res.json();if(!res.ok){const error=new Error(data.error||'Request failed');error.status=res.status;throw error;}return data;}
-function show(value){if(value==='experiences')loadExperiences();if(!adminMode&&['auth','admin','meeting-admin'].includes(value))value='library';section=value;if(section==='meetings'&&auth.authenticated)section='meeting-admin';if(['admin','meeting-admin'].includes(section)&&!auth.authenticated)section='auth';root.querySelectorAll('[data-panel]').forEach(p=>p.hidden=p.dataset.panel!==section);root.querySelectorAll('.ul-app-nav [data-section]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.section===section)));}
+function show(value){if(value==='experiences'&&!(auth.authenticated||experiences.some(x=>x.visibility==='public')))value=adminMode?'auth':'home';if(value==='experiences')loadExperiences();if(!adminMode&&['auth','admin','meeting-admin'].includes(value))value='library';section=value;if(section==='meetings'&&auth.authenticated)section='meeting-admin';if(['admin','meeting-admin'].includes(section)&&!auth.authenticated)section='auth';root.querySelectorAll('[data-panel]').forEach(p=>p.hidden=p.dataset.panel!==section);root.querySelectorAll('.ul-app-nav [data-section]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.section===section)));}
 function applyLocale(){
 $('#ul-email-label').hidden=!backend;
 $('#ul-auth-form').elements.email.required=!!backend;
@@ -189,14 +190,15 @@ function detail(id,toggle=false){
  panel.hidden=false;
  panel.innerHTML='<div class="ul-meta">'+esc(x.filename)+'</div><div class="ul-actions"><a class="ul-kakao-link" href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">'+t('PDF 열기')+'</a><a class="ul-kakao-link" href="'+esc(downloadUrl)+'">'+t('PDF 내려받기')+'</a></div>'+(x.description?'<p>'+esc(x.description)+'</p>':'')+(x.source?'<span class="ul-tag">'+t('출처·근거 범위')+'</span><p>'+esc(x.source)+'</p>':'');
 }
-async function refresh(){[auth,materials,meetings]=await Promise.all([api('/api/auth/status'),api('/api/materials'),api('/api/meetings')]);if(!adminMode)auth.authenticated=false;applyLocale();if(adminMode&&section==='auth'&&auth.authenticated)show('admin');}
+function clearCases(){++caseRequest;experiences=[];experiencesLoaded=false;experiencesLoading=false;$('#ul-case-form').reset();$('#ul-case-form').hidden=true;$('#ul-experience-list').replaceChildren();$('#ul-case-tools').hidden=true;$('#ul-cases-nav').hidden=true;$('#ul-home-cases').hidden=true;}
+async function refresh(){clearCases();[auth,materials,meetings]=await Promise.all([api('/api/auth/status'),api('/api/materials'),api('/api/meetings')]);if(!adminMode)auth.authenticated=false;applyLocale();await loadExperiences();if(adminMode&&section==='auth'&&auth.authenticated)show('admin');if(section==='experiences'&&!auth.authenticated&&!experiences.length)show('home');}
 root.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.section)show(b.dataset.section);if(b.id==='ul-login'){show('auth');$('#ul-auth-notice').textContent='';}if(b.dataset.view)detail(b.dataset.view,true);if(b.dataset.edit){const x=materials.find(x=>x.id===b.dataset.edit);editId=x.id;for(const key of ['title','language','description','source'])$('#ul-form').elements.namedItem(key).value=x[key];$('#ul-form').elements.file.value='';$('#ul-cancel').hidden=false;applyLocale();$('#ul-form').scrollIntoView({block:'start',behavior:'smooth'});}});
 $('#ul-locale').addEventListener('change',e=>{locale=e.target.value;try {localStorage.setItem('olylife_locale',locale);}catch {}applyLocale();});
 $('#ul-search').addEventListener('input',()=>{render();detailId=null;$('#ul-detail').hidden=true;});
 function reset(){editId=null;$('#ul-form').reset();$('#ul-cancel').hidden=true;applyLocale();}
 $('#ul-cancel').addEventListener('click',reset);
 $('#ul-auth-form').addEventListener('submit',async e=>{e.preventDefault();const button=$('#ul-auth-submit');button.disabled=true;$('#ul-auth-notice').textContent='';try {await api(auth.initialized?'/api/auth/login':'/api/auth/setup',{email:e.target.elements.email.value,password:e.target.elements.password.value});e.target.reset();await refresh();show('admin');}catch(error){$('#ul-auth-notice').textContent=t(error.message);}finally{button.disabled=false;}});
-$('#ul-logout').addEventListener('click',async()=>{try{await api('/api/auth/logout',{});await refresh();reset();show('library');}catch(error){$('#ul-notice').textContent=t(error.message);}});
+$('#ul-logout').addEventListener('click',async()=>{clearCases();auth.authenticated=false;applyLocale();show('home');try{await api('/api/auth/logout',{});await refresh();reset();show('home');}catch(error){$('#ul-notice').textContent=t(error.message);}});
 function fileBase64(file){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onerror=()=>reject(new Error('Could not read file'));reader.onload=()=>resolve(String(reader.result).split(',')[1]);reader.readAsDataURL(file);});}
 $('#ul-form').addEventListener('submit',async e=>{e.preventDefault();const button=$('#ul-save'),form=e.target,file=form.elements.file.files[0];$('#ul-notice').textContent='';button.disabled=true;button.textContent=t('저장 중…');try{if(!editId&&!file)throw new Error('파일을 선택하세요.');if(file&&(!/\.pdf$/i.test(file.name)))throw new Error('PDF 파일만 등록할 수 있습니다.');if(file&&file.size>15*1024*1024)throw new Error('PDF 최대 크기는 15MB입니다.');const input={};for(const key of ['title','language','description','source'])input[key]=form.elements.namedItem(key).value;if(editId)input.id=editId;if(file){input.filename=file.name;input.fileBase64=await fileBase64(file);}await api('/api/materials',input);detailId=null;$('#ul-detail').hidden=true;await refresh();reset();$('#ul-notice').textContent=t('자료를 저장했습니다.');}catch(error){if(error.status===401){auth.authenticated=false;applyLocale();show('auth');$('#ul-auth-notice').textContent=t(error.message);}else $('#ul-notice').textContent=t(error.message);}finally{button.disabled=false;button.textContent=t(editId?'저장하기':'등록하기');}});
 function renderMeetings(){
@@ -217,30 +219,45 @@ root.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)retur
 $('#ul-meeting-form').addEventListener('submit',async e=>{e.preventDefault();const form=e.target,button=$('#ul-meeting-save');button.disabled=true;button.textContent=t('저장 중…');$('#ul-meeting-notice').textContent='';try{const input={};for(const key of ['title','starts','language','link'])input[key]=form.elements.namedItem(key).value;input.link=normalizeMeetingLink(input.link);form.elements.link.value=input.link;if(meetingEditId)input.id=meetingEditId;await api('/api/meetings',input);await refresh();resetMeeting();$('#ul-meeting-notice').textContent=t('미팅을 저장했습니다.');}catch(error){if(error.status===401){auth.authenticated=false;applyLocale();show('auth');$('#ul-auth-notice').textContent=t(error.message);}else $('#ul-meeting-notice').textContent=t(error.message);}finally{button.disabled=false;button.textContent=t(meetingEditId?'저장하기':'등록하기');}});
 async function loadExperiences(){
  if(experiencesLoaded||experiencesLoading)return;
+ const request=++caseRequest;
  experiencesLoading=true;experiencesFailed=false;renderExperiences();
- try{const response=await fetch(new URL('./experiences.json',document.baseURI));if(!response.ok)throw new Error('catalog');const data=await response.json();if(!Array.isArray(data))throw new Error('catalog');
- experiences=normalizeCases(data);experiencesLoaded=true;
- }catch{experiencesFailed=true;}finally{experiencesLoading=false;renderExperiences();}
+ try{const data=await api(auth.authenticated?'/api/experiences/admin':'/api/experiences');if(request!==caseRequest)return;if(!Array.isArray(data))throw new Error('catalog');experiences=normalizeCases(data);experiencesLoaded=true;
+ }catch{if(request===caseRequest){experiences=[];experiencesFailed=true;}}finally{if(request===caseRequest){experiencesLoading=false;renderExperiences();}}
 }
 function renderExperiences(){
- const categories=[...new Set([...defaultExperienceCategories,...experiences.flatMap(x=>x.categories)])];
+ const available=auth.authenticated||experiences.some(x=>x.visibility==='public');
+ $('#ul-cases-nav').hidden=!available;$('#ul-home-cases').hidden=!available;$('#ul-case-tools').hidden=!auth.authenticated;
+ $('#ul-home-title').textContent=t(available?'사례·교육·설명회를 하나의 앱으로.':'교육·설명회를 하나의 앱으로.');
+ root.querySelectorAll('.ul-app-nav button:not([hidden])').forEach(b=>b.style.flexBasis=available?'calc((100% - 24px)/4)':'calc((100% - 16px)/3)');
+ const used=new Set(experiences.flatMap(x=>x.categories));const categories=[...new Set([...defaultExperienceCategories.filter(x=>used.has(x)),...used])];
  $('#ul-experience-categories').innerHTML=[['','전체'],...categories.map(value=>[value,value])].map(([value,label])=>'<button type="button" data-case-category="'+esc(value)+'" aria-pressed="'+String(value===experienceCategory)+'">'+esc(t(label))+'</button>').join('');
 
  const country=$('#ul-experience-country'),language=$('#ul-experience-language');
  for(const [select,key,label] of [[country,'country','전체 국가'],[language,'language','전체 언어']]){const selected=select.value;select.innerHTML='<option value="">'+t(label)+'</option>'+[...new Set(experiences.map(x=>x[key]).filter(Boolean))].sort().map(value=>'<option value="'+esc(value)+'">'+esc(value)+'</option>').join('');select.value=selected;}
  const query=$('#ul-experience-search').value.trim().toLowerCase();
- const list=experiences.filter(x=>(!experienceCategory||x.categories.includes(experienceCategory))&&(!country.value||x.country===country.value)&&(!language.value||x.language===language.value)&&(!query||[x.title,x.country,x.summary,...x.categories].join(' ').toLowerCase().includes(query)));
- $('#ul-experience-list').innerHTML=experiencesLoading?'<p class="ul-sub">'+t('사례를 불러오는 중입니다.')+'</p>':experiencesFailed?'<p class="ul-sub">'+t('사례를 불러오지 못했습니다.')+'</p>':list.length?list.map(x=>'<article class="ul-item"><span class="ul-tag">'+esc([x.country,x.language].filter(Boolean).join(' · '))+'</span><h3>'+esc(x.title)+'</h3>'+(x.summary?'<span class="ul-tag">'+t('한국어 요약')+'</span><p class="ul-case-summary">'+esc(x.summary)+'</p>':'')+(x.url?'<a class="ul-kakao-link" href="'+esc(x.url)+'" target="_blank" rel="noopener noreferrer">'+t('원문 보기')+'</a><button type="button" data-copy-experience="'+esc(x.id)+'">'+t('링크 복사')+'</button>':'')+'</article>').join(''):'<p class="ul-sub">'+t(experiences.length?'조건에 맞는 사례가 없습니다.':'등록된 사례가 없습니다.')+'</p>';
+ const media=$('#ul-case-media').value,visibility=auth.authenticated?$('#ul-case-visibility').value:'public';
+ const list=experiences.filter(x=>(!visibility||x.visibility===visibility)&&(!media||x.media_type===media)&&(!experienceCategory||x.categories.includes(experienceCategory))&&(!country.value||x.country===country.value)&&(!language.value||x.language===language.value)&&(!query||[x.id,x.title,x.country,x.summary,...x.categories].join(' ').toLowerCase().includes(query)));
+ $('#ul-case-count').textContent=locale==='ko'?'사례 '+list.length+'건 · 영상 '+list.filter(x=>x.media_type==='video').length+'건 · 글 '+list.filter(x=>x.media_type!=='video').length+'건':list.length+' cases';
+ $('#ul-experience-list').innerHTML=experiencesLoading?'<p class="ul-sub">'+t('사례를 불러오는 중입니다.')+'</p>':experiencesFailed?'<p class="ul-sub">'+t('사례를 불러오지 못했습니다.')+'</p>':list.length?list.map(x=>'<article class="ul-item"><span class="ul-tag">'+esc([x.country,x.language].filter(Boolean).join(' · '))+'</span><h3>'+esc(x.title)+'</h3>'+(auth.authenticated?'<p class="ul-meta">'+esc(x.id)+' · '+esc(x.visibility==='public'?'공개':'관리자 전용')+'</p>':'')+(x.summary?'<span class="ul-tag">'+t('한국어 요약')+'</span><p class="ul-case-summary">'+esc(x.summary)+'</p>':'')+(x.video_url?'<a class="ul-kakao-link" href="'+esc(x.video_url)+'" target="_blank" rel="noopener noreferrer">'+t('영상 보기')+'</a>':'')+(x.url?'<a class="ul-kakao-link" href="'+esc(x.url)+'" target="_blank" rel="noopener noreferrer">'+t('원문 보기')+'</a><button type="button" data-copy-experience="'+esc(x.id)+'">'+t('링크 복사')+'</button>':'')+(auth.authenticated?'<p class="ul-meta">'+esc(x.review_status)+'</p><button type="button" data-case-edit="'+esc(x.id)+'">사례 수정 · 공개 설정</button>':'')+'</article>').join(''):'<p class="ul-sub">'+t(experiences.length?'조건에 맞는 사례가 없습니다.':'등록된 사례가 없습니다.')+'</p>';
 }
 $('#ul-experience-search').addEventListener('input',renderExperiences);
 $('#ul-experience-country').addEventListener('change',renderExperiences);
 $('#ul-experience-language').addEventListener('change',renderExperiences);
+$('#ul-case-media').addEventListener('change',renderExperiences);
+$('#ul-case-visibility').addEventListener('change',renderExperiences);
+function openCaseForm(item){if(!auth.authenticated)return;caseEditId=item?.id??null;const form=$('#ul-case-form');form.reset();if(item)for(const key of ['title','summary','country','language','url','video_url','media_type','review_status','visibility'])form.elements.namedItem(key).value=item[key];form.elements.categories.value=item?.categories.join(', ')??'';if(!item){form.elements.visibility.value='admin';form.elements.media_type.value='document';}form.hidden=false;form.scrollIntoView({block:'start',behavior:'smooth'});}
+$('#ul-case-new').addEventListener('click',()=>openCaseForm());
+$('#ul-case-cancel').addEventListener('click',()=>{$('#ul-case-form').hidden=true;caseEditId=null;});
+$('#ul-case-import').addEventListener('change',async e=>{const file=e.target.files[0];if(!file||!auth.authenticated)return;e.target.disabled=true;const notice=$('#ul-case-notice');try{if(file.size>10*1024*1024)throw new Error('JSON 최대 10MB');const rows=importCaseRows(JSON.parse(await file.text()));const result=await api('/api/experiences/import',{records:rows});await refresh();notice.textContent='비공개로 '+result.imported+'건 추가 · 기존 '+result.skipped+'건 유지';}catch(error){notice.textContent=error.message;}finally{e.target.value='';e.target.disabled=false;}});
+$('#ul-case-form').addEventListener('submit',async e=>{e.preventDefault();if(!auth.authenticated)return;const form=e.target,button=form.querySelector('[type="submit"]'),notice=$('#ul-case-notice');button.disabled=true;try{const input={id:caseEditId??crypto.randomUUID()};for(const key of ['title','summary','country','language','url','video_url','media_type','review_status','visibility'])input[key]=form.elements.namedItem(key).value;input.categories=form.elements.categories.value.split(/[,，]/).map(x=>x.trim()).filter(Boolean);await api('/api/experiences/admin',input);await refresh();notice.textContent=input.visibility==='public'?'공개로 저장했습니다.':'관리자 전용으로 저장했습니다.';}catch(error){notice.textContent=error.message;}finally{button.disabled=false;}});
+root.addEventListener('click',e=>{const button=e.target.closest('[data-case-edit]');if(button&&auth.authenticated)openCaseForm(experiences.find(x=>x.id===button.dataset.caseEdit));});
 root.addEventListener('click',async e=>{const category=e.target.closest('[data-case-category]');if(category){experienceCategory=category.dataset.caseCategory;renderExperiences();return;}const button=e.target.closest('[data-copy-experience]');if(!button)return;const item=experiences.find(x=>x.id===button.dataset.copyExperience);if(!item)return;try{await navigator.clipboard.writeText(item.url);button.textContent=t('링크를 복사했습니다.');}catch{button.textContent=item.url;}});
 $('#ul-import-local').addEventListener('click',async()=>{
  const button=$('#ul-import-local'),notice=$('#ul-import-notice');button.disabled=true;notice.textContent='기존 자료와 미팅을 옮기는 중입니다…';
  try{const {data,error}=await backend.client.auth.getSession();if(error)throw error;const res=await fetch('/api/migrate-cloud',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accessToken:data.session?.access_token})});const result=await res.json();if(!res.ok)throw new Error(result.error);await refresh();notice.textContent='완료: 자료 '+result.materials+'개, 미팅 '+result.meetings+'개를 옮겼습니다.';}
  catch(error){notice.textContent=error.message;}finally{button.disabled=false;}
 });
+if(backend)backend.client.auth.onAuthStateChange((event,session)=>{if(!session&&auth.authenticated){clearCases();auth.authenticated=false;applyLocale();show(adminMode?'auth':'home');}});
 show(adminMode?'auth':'home');applyLocale();refresh().catch(error=>{$('#ul-list').textContent=error.message;});
 })();
 
