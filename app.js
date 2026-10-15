@@ -13,7 +13,7 @@ const translations={
  '이용자 자료실':['Library preview','利用者の資料室','用户资料库'],
  '선생님 관리자':['Admin preview','管理者画面','管理员预览'],
  '올리라이프비즈':['Olyliifebiz','Olyliifebiz','Olyliifebiz'],
- '카카오톡 사업 문의':['Business inquiry · KakaoTalk','事業のお問い合わせ · KakaoTalk','业务咨询 · KakaoTalk'],
+ '카카오톡 문의':['Contact · KakaoTalk','お問い合わせ · KakaoTalk','联系咨询 · KakaoTalk'],
  '배우고, 이해하고, 함께 성장하기':['Learn, understand, grow together','学び、理解し、ともに成長する','学习、理解、共同成长'],
  '자료실':['Library','資料室','资料库'],
  '커뮤니케이션':['Communication','コミュニケーション','交流'],
