@@ -36,7 +36,8 @@ export function mountSubtitlePlayer(container,input,options={}){
   const rows=new Map();
   for(const cue of data.cues){const li=node('li'),button=node('button'),time=node('time','',subtitleClock(cue.start)),text=node('span','',cue.ko.replaceAll('\n',' '));button.type='button';button.disabled=true;button.append(time,text);button.addEventListener('click',async()=>{if(!adapter||disposed)return;try{await adapter.seek(cue.start+.01);if(disposed)return;await adapter.play();}catch{message('영상 재생 버튼을 누른 뒤 다시 선택해주세요.',true);}});li.append(button);list.append(li);rows.set(cue.id,{li,button});}
   const note=node('p','os-note',data.method==='provided-korean-caption-edited'?'제공된 한국어 자동자막을 다듬었습니다.':'원문 자막·음성전사에 기반한 번역입니다. 영상 속 개인의 발언을 옮겼으며 내용의 독립 검증은 아닙니다.');
-  wrapper.append(heading,viewer,status,scope,details,note);container.replaceChildren(wrapper);
+  const sourceLink=node('a','os-source','원본 영상 보기 ↗');sourceLink.href=data.watchUrl;sourceLink.target='_blank';sourceLink.rel='noopener noreferrer';
+  wrapper.append(heading,viewer,status,scope,details,sourceLink,note);container.replaceChildren(wrapper);
   function message(text,error=false){if(disposed)return;status.textContent=text;status.dataset.error=String(error);}
   function expanded(value){viewer.classList.toggle('os-expanded',value);expand.textContent=value?'작게 보기':'크게 보기';expand.setAttribute('aria-expanded',String(value));}
   const key=event=>{if(event.key==='Escape')expanded(false);};document.addEventListener('keydown',key);
@@ -53,7 +54,7 @@ export function mountSubtitlePlayer(container,input,options={}){
   }
   mode.addEventListener('change',()=>render(current));
   function ready(){if(disposed)return;for(const row of rows.values())row.button.disabled=false;message('재생 버튼을 누르면 영상 아래에 한국어 자막이 나옵니다.');options.onReady?.(data.caseId);}
-  function error(text){message(text,true);options.onError?.({caseId:data.caseId,message:text});}
+  function error(text){message(text,true);details.open=true;options.onError?.({caseId:data.caseId,message:text});}
   const promise=(async()=>{
     try{
       if(data.platform==='Telegram'){
@@ -68,9 +69,9 @@ export function mountSubtitlePlayer(container,input,options={}){
       const iframe=node('iframe');iframe.title=data.title+' 원본 영상';iframe.allow='autoplay; encrypted-media; picture-in-picture';iframe.referrerPolicy='strict-origin-when-cross-origin';iframe.src=embedSource(data,location.origin);frame.append(iframe);
       if(data.platform==='Vimeo'){
         await script('https://player.vimeo.com/api/player.js',()=>!!window.Vimeo?.Player);if(disposed)return;
-        const player=new window.Vimeo.Player(iframe);adapter={seek:seconds=>player.setCurrentTime(seconds),play:()=>player.play(),pause:()=>{player.pause().catch(()=>{});},destroy:()=>{player.destroy().catch(()=>{});}};
+        const player=new window.Vimeo.Player(iframe);adapter={seek:async seconds=>{const actual=await player.setCurrentTime(seconds);render(actual);},play:()=>player.play(),pause:()=>{player.pause().catch(()=>{});},destroy:()=>{player.destroy().catch(()=>{});}};
         player.on('timeupdate',event=>render(event.seconds));player.on('seeked',event=>render(event.seconds));player.on('play',()=>{played=true;});player.on('error',()=>error('원본 영상이 재생되지 않습니다. 원본 링크와 대본을 확인해주세요.'));
-        await Promise.race([player.ready(),new Promise((_,reject)=>setTimeout(()=>reject(new Error('Vimeo timeout')),15000))]);if(!disposed)ready();
+        await Promise.race([player.ready(),new Promise((_,reject)=>setTimeout(()=>reject(new Error('Vimeo timeout')),15000))]);if(!disposed){ready();let reading=false;poll=setInterval(async()=>{if(disposed||reading)return;reading=true;try{render(await player.getCurrentTime());}catch{}finally{reading=false;}},350);}
       }else{
         if(!window.onYouTubeIframeAPIReady)window.onYouTubeIframeAPIReady=()=>{};
         await script('https://www.youtube.com/iframe_api',()=>!!window.YT?.Player);if(disposed)return;
