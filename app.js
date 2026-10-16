@@ -123,6 +123,7 @@ Object.assign(translations, {
  '비밀번호':['Password','パスワード','密码'],
  '로그인':['Sign in','ログイン','登录'],
  'Google 계정으로 로그인':['Sign in with Google','Google でログイン','使用 Google 登录'],
+ '개인정보 안내':['Privacy','プライバシー','隐私说明'],
  '구글 계정으로 간편하게 로그인하세요.':['Sign in with your Google account.','Google アカウントでログインしてください。','使用 Google 账号登录。'],
  '이 계정에는 관리자 권한이 없습니다.':['This account does not have administrator access.','このアカウントには管理者権限がありません。','此账号没有管理员权限。'],
  '구글 로그인이 취소되었거나 완료되지 않았습니다.':['Google sign-in was cancelled or could not be completed.','Google ログインがキャンセルされたか、完了しませんでした。','Google 登录已取消或未完成。'],
