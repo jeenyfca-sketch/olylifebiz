@@ -212,7 +212,7 @@ function detail(id,toggle=false){
  panel.hidden=false;
  panel.innerHTML='<div class="ul-meta">'+esc(x.filename)+'</div><div class="ul-actions"><a class="ul-kakao-link" href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">'+t('PDF 열기')+'</a><a class="ul-kakao-link" href="'+esc(downloadUrl)+'">'+t('PDF 내려받기')+'</a></div>'+(x.description?'<p>'+esc(x.description)+'</p>':'')+(x.source?'<span class="ul-tag">'+t('출처·근거 범위')+'</span><p>'+esc(x.source)+'</p>':'');
 }
-function clearCases(){++caseRequest;experiences=[];experiencesLoaded=false;experiencesLoading=false;$('#ul-case-form').reset();$('#ul-case-form').hidden=true;$('#ul-experience-list').replaceChildren();$('#ul-case-tools').hidden=true;$('#ul-cases-nav').hidden=true;$('#ul-home-cases').hidden=true;}
+function clearCases(){closeSubtitles();++caseRequest;experiences=[];experiencesLoaded=false;experiencesLoading=false;$('#ul-case-form').reset();$('#ul-case-form').hidden=true;$('#ul-experience-list').replaceChildren();$('#ul-case-tools').hidden=true;$('#ul-cases-nav').hidden=true;$('#ul-home-cases').hidden=true;}
 async function refresh(){const request=++authRequest;clearCases();const results=await Promise.all([api('/api/auth/status'),api('/api/materials'),api('/api/meetings')]);if(request!==authRequest)return;[auth,materials,meetings]=results;if(!adminMode)auth.authenticated=false;applyLocale();if(auth.loginError){$('#ul-auth-notice').textContent=t(auth.loginError);show('auth');}else if(adminMode&&auth.signedIn&&!auth.authenticated){$('#ul-auth-notice').textContent=t('이 계정에는 관리자 권한이 없습니다.');}await loadExperiences();if(adminMode&&section==='auth'&&auth.authenticated)show('admin');if(section==='experiences'&&!auth.authenticated&&!experiences.length)show('home');}
 root.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.section)show(b.dataset.section);if(['ul-login','ul-user-login'].includes(b.id)){show('auth');$('#ul-auth-notice').textContent='';}if(b.dataset.view)detail(b.dataset.view,true);if(b.dataset.edit){const x=materials.find(x=>x.id===b.dataset.edit);editId=x.id;for(const key of ['title','language','description','source'])$('#ul-form').elements.namedItem(key).value=x[key];$('#ul-form').elements.file.value='';$('#ul-cancel').hidden=false;applyLocale();$('#ul-form').scrollIntoView({block:'start',behavior:'smooth'});}});
 $('#ul-locale').addEventListener('change',e=>{locale=e.target.value;try {localStorage.setItem('olylife_locale',locale);}catch {}applyLocale();});
@@ -249,7 +249,7 @@ async function loadExperiences(){
 }
 function renderExperiences(){
  const available=auth.authenticated||experiences.some(x=>x.visibility==='public');
- $('#ul-cases-nav').hidden=!available;$('#ul-home-cases').hidden=!available;$('#ul-case-tools').hidden=!auth.authenticated;
+ $('#ul-cases-nav').hidden=!available;$('#ul-home-cases').hidden=!available;$('#ul-case-tools').hidden=!auth.authenticated;$('#ul-subtitle-import-label').hidden=!auth.authenticated||!backend;
  $('#ul-home-title').textContent=t(available?'사례·교육·설명회를 하나의 앱으로.':'교육·설명회를 하나의 앱으로.');
  root.querySelectorAll('.ul-app-nav button:not([hidden])').forEach(b=>b.style.flexBasis=available?'calc((100% - 24px)/4)':'calc((100% - 16px)/3)');
  const used=new Set(experiences.flatMap(x=>x.categories));const categories=[...new Set([...defaultExperienceCategories.filter(x=>used.has(x)),...used])];
@@ -261,7 +261,7 @@ function renderExperiences(){
  const media=$('#ul-case-media').value,visibility=auth.authenticated?$('#ul-case-visibility').value:'public';
  const list=experiences.filter(x=>(!visibility||x.visibility===visibility)&&(!media||x.media_type===media)&&(!experienceCategory||x.categories.includes(experienceCategory))&&(!country.value||x.country===country.value)&&(!language.value||x.language===language.value)&&(!query||[x.id,x.title,x.country,x.summary,...x.categories].join(' ').toLowerCase().includes(query)));
  $('#ul-case-count').textContent=locale==='ko'?'사례 '+list.length+'건 · 영상 '+list.filter(x=>x.media_type==='video').length+'건 · 글 '+list.filter(x=>x.media_type!=='video').length+'건':list.length+' cases';
- $('#ul-experience-list').innerHTML=experiencesLoading?'<p class="ul-sub">'+t('사례를 불러오는 중입니다.')+'</p>':experiencesFailed?'<p class="ul-sub">'+t('사례를 불러오지 못했습니다.')+'</p>':list.length?list.map(x=>'<article class="ul-item"><span class="ul-tag">'+esc([x.country,x.language].filter(Boolean).join(' · '))+'</span><h3>'+esc(x.title)+'</h3>'+(auth.authenticated?'<p class="ul-meta">'+esc(x.id)+' · '+esc(x.visibility==='public'?'공개':'관리자 전용')+'</p>':'')+(x.summary?'<span class="ul-tag">'+t('한국어 요약')+'</span><p class="ul-case-summary">'+esc(x.summary)+'</p>':'')+(x.video_url?'<a class="ul-kakao-link" href="'+esc(x.video_url)+'" target="_blank" rel="noopener noreferrer">'+t('영상 보기')+'</a>':'')+(x.url?'<a class="ul-kakao-link" href="'+esc(x.url)+'" target="_blank" rel="noopener noreferrer">'+t('원문 보기')+'</a><button type="button" data-copy-experience="'+esc(x.id)+'">'+t('링크 복사')+'</button>':'')+(auth.authenticated?'<p class="ul-meta">'+esc(x.review_status)+'</p><button type="button" data-case-edit="'+esc(x.id)+'">사례 수정 · 공개 설정</button>':'')+'</article>').join(''):'<p class="ul-sub">'+t(experiences.length?'조건에 맞는 사례가 없습니다.':'등록된 사례가 없습니다.')+'</p>';
+ $('#ul-experience-list').innerHTML=experiencesLoading?'<p class="ul-sub">'+t('사례를 불러오는 중입니다.')+'</p>':experiencesFailed?'<p class="ul-sub">'+t('사례를 불러오지 못했습니다.')+'</p>':list.length?list.map(x=>'<article class="ul-item"><span class="ul-tag">'+esc([x.country,x.language].filter(Boolean).join(' · '))+'</span><h3>'+esc(x.title)+'</h3>'+(auth.authenticated?'<p class="ul-meta">'+esc(x.id)+' · '+esc(x.visibility==='public'?'공개':'관리자 전용')+'</p>':'')+(x.summary?'<span class="ul-tag">'+t('한국어 요약')+'</span><p class="ul-case-summary">'+esc(x.summary)+'</p>':'')+(x.video_url?(auth.authenticated&&/^OLY-\d{3}$/.test(x.id)?'<button type="button" data-case-subtitle="'+esc(x.id)+'">한국어 자막으로 보기</button>':'')+'<a class="ul-kakao-link" href="'+esc(x.video_url)+'" target="_blank" rel="noopener noreferrer">'+t('영상 보기')+'</a>':'')+(x.url?'<a class="ul-kakao-link" href="'+esc(x.url)+'" target="_blank" rel="noopener noreferrer">'+t('원문 보기')+'</a><button type="button" data-copy-experience="'+esc(x.id)+'">'+t('링크 복사')+'</button>':'')+(auth.authenticated?'<p class="ul-meta">'+esc(x.review_status)+'</p><button type="button" data-case-edit="'+esc(x.id)+'">사례 수정 · 공개 설정</button>':'')+'</article>').join(''):'<p class="ul-sub">'+t(experiences.length?'조건에 맞는 사례가 없습니다.':'등록된 사례가 없습니다.')+'</p>';
 }
 $('#ul-experience-search').addEventListener('input',renderExperiences);
 $('#ul-experience-country').addEventListener('change',renderExperiences);
@@ -280,6 +280,26 @@ $('#ul-import-local').addEventListener('click',async()=>{
  try{const {data,error}=await backend.client.auth.getSession();if(error)throw error;const res=await fetch('/api/migrate-cloud',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accessToken:data.session?.access_token})});const result=await res.json();if(!res.ok)throw new Error(result.error);await refresh();notice.textContent='완료: 자료 '+result.materials+'개, 미팅 '+result.meetings+'개를 옮겼습니다.';}
  catch(error){notice.textContent=error.message;}finally{button.disabled=false;}
 });
+
+let subtitlePlayer=null,subtitleRequest=0,subtitleDialog=null,subtitleFocus=null;
+function closeSubtitles(){++subtitleRequest;try{subtitlePlayer?.destroy();}catch{}subtitlePlayer=null;if(subtitleDialog){subtitleDialog.close();subtitleDialog.remove();subtitleDialog=null;}subtitleFocus?.focus();subtitleFocus=null;}
+async function openSubtitles(id,button){
+ if(!auth.authenticated)return;closeSubtitles();const request=++subtitleRequest;subtitleFocus=button;
+ const dialog=document.createElement('dialog');dialog.className='oly-subtitle-dialog';dialog.setAttribute('aria-label','한국어 자막 영상');
+ const close=document.createElement('button');close.type='button';close.textContent='닫기';close.className='os-close';
+ const content=document.createElement('div');content.textContent='한국어 자막을 불러오고 있습니다.';dialog.append(close,content);document.body.append(dialog);subtitleDialog=dialog;dialog.showModal();close.focus();
+ close.addEventListener('click',closeSubtitles);dialog.addEventListener('cancel',event=>{event.preventDefault();closeSubtitles();});
+ try{const [data,module]=await Promise.all([api('/api/experiences/'+id+'/subtitles'),import(new URL('./subtitle-player.js?v=1',document.baseURI))]);if(request!==subtitleRequest||!auth.authenticated)return;subtitlePlayer=module.mountSubtitlePlayer(content,data,{mediaUrl:data.mediaUrl});}
+ catch(error){if(request===subtitleRequest){content.textContent=error.message;if(error.status===401){clearCases();auth.authenticated=false;applyLocale();show('auth');}}}
+}
+root.addEventListener('click',event=>{const button=event.target.closest('[data-case-subtitle]');if(button&&auth.authenticated)openSubtitles(button.dataset.caseSubtitle,button);});
+$('#ul-subtitle-media-import').addEventListener('change',async event=>{
+ const input=event.target,files=Array.from(input.files||[]),notice=$('#ul-subtitle-import-notice');if(!files.length||!auth.authenticated||!backend)return;
+ const generation=authRequest;input.disabled=true;
+ try{const result=await api('/api/subtitles/media/import',{files,onProgress:progress=>{if(generation===authRequest&&auth.authenticated)notice.textContent='영상 등록 '+(progress.uploaded+progress.skipped)+' / '+progress.total;}});if(generation===authRequest&&auth.authenticated)notice.textContent='완료: '+result.uploaded+'개 등록 · 기존 '+result.skipped+'개 유지';}
+ catch(error){if(generation===authRequest&&auth.authenticated)notice.textContent=error.message;}finally{input.value='';input.disabled=false;}
+});
+
 if(backend)backend.client.auth.onAuthStateChange((event,session)=>{if(!session&&(auth.authenticated||auth.signedIn)){++authRequest;clearCases();auth.authenticated=false;auth.signedIn=false;auth.user=null;applyLocale();show(adminMode?'auth':'home');}});
 show(adminMode?'auth':'home');applyLocale();refresh().catch(error=>{$('#ul-list').textContent=error.message;});
 })();
