@@ -171,6 +171,7 @@ let locale='ko';try { const saved=localStorage.getItem('olylife_locale');if(know
 let experiences=[],experiencesLoaded=false,experiencesLoading=false,experiencesFailed=false,experienceCategory='',caseEditId=null,caseRequest=0;
 const defaultExperienceCategories=['관절·무릎','허리·등','어깨·목','보행·다리','파킨슨 관련','기억·인지','수면','신경·저림·경련','순환·붓기','혈압·혈당·대사','비뇨·야간뇨','기분·활력','소화·배변','눈·시야','피부','두통','사용감·불편','사용 편의'];
 let materials=[],meetings=[],auth={initialized:!!backend,authenticated:false,signedIn:false},section='home',editId=null,meetingEditId=null,detailId=null,authRequest=0;
+let preparedPublishController=null;
 const textNodes=[],attrs=[];
 const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
 while(walker.nextNode()){const node=walker.currentNode;if(node.parentElement.closest('script,style,option'))continue;const key=node.textContent.trim();if(translations[key])textNodes.push({node,key});}
@@ -182,6 +183,7 @@ $('#ul-email-label').hidden=!backend;
 $('#ul-auth-form').elements.email.required=!!backend;
 $('#ul-auth-form').elements.password.minLength=backend?6:10;
 $('#ul-import-local').hidden=!backend||!auth.authenticated||!['127.0.0.1','localhost'].includes(location.hostname);
+const preparedPublish=$('#ul-prepared-publish');if(preparedPublish){preparedPublish.hidden=!auth.authenticated;$('#ul-prepared-publish-notice').hidden=!auth.authenticated;}
 root.lang=locale;document.documentElement.lang=locale;$('#ul-locale').value=locale;textNodes.forEach(({node,key})=>node.textContent=t(key));attrs.forEach(({el,name,key})=>el.setAttribute(name,t(key)));$('#ul-auth-title').textContent=t(auth.initialized?'관리자 로그인':'관리자 비밀번호 설정');$('#ul-auth-submit').textContent=t(auth.initialized?'로그인':'설정하고 시작하기');$('#ul-auth-description').textContent=t(auth.initialized?'설정한 관리자 비밀번호를 입력하세요.':'비밀번호를 10자 이상으로 정하세요. 이 컴퓨터의 관리자 계정에만 사용됩니다.');$('#ul-auth-form').elements.password.autocomplete=auth.initialized?'current-password':'new-password';$('#ul-form-title').textContent=t(editId?'자료 수정':'새 자료 등록');$('#ul-save').textContent=t(editId?'저장하기':'등록하기');$('#ul-file-label').textContent=t(editId?'등록된 PDF를 유지합니다. 새 파일을 선택하면 교체됩니다.':'PDF 최대 15MB · 이 컴퓨터에 저장합니다.');if(backend){$('#ul-auth-description').textContent=locale==='ko'?'수파베이스에서 만든 관리자 이메일과 비밀번호를 입력하세요.':'Sign in with your administrator email and password.';$('#ul-file-label').textContent=locale==='ko'?'PDF 최대 15MB':'PDF · Max 15MB';}
 $('#ul-auth-form').hidden=!adminMode;
 if(!adminMode){$('#ul-auth-title').textContent=t('로그인');$('#ul-auth-description').textContent=t('구글 계정으로 간편하게 로그인하세요.');}
@@ -249,7 +251,7 @@ async function loadExperiences(){
 }
 function renderExperiences(){
  const available=auth.authenticated||experiences.some(x=>x.visibility==='public');
- $('#ul-cases-nav').hidden=!available;$('#ul-home-cases').hidden=!available;$('#ul-case-tools').hidden=!auth.authenticated;$('#ul-subtitle-import-label').hidden=!auth.authenticated||!backend;
+ $('#ul-cases-nav').hidden=!available;$('#ul-home-cases').hidden=!available;$('#ul-case-tools').hidden=!auth.authenticated;$('#ul-subtitle-import-label').hidden=!auth.authenticated||!backend;$('#ul-subtitle-catalog-label').hidden=!auth.authenticated||!backend;
  $('#ul-home-title').textContent=t(available?'사례·교육·설명회를 하나의 앱으로.':'교육·설명회를 하나의 앱으로.');
  root.querySelectorAll('.ul-app-nav button:not([hidden])').forEach(b=>b.style.flexBasis=available?'calc((100% - 24px)/4)':'calc((100% - 16px)/3)');
  const used=new Set(experiences.flatMap(x=>x.categories));const categories=[...new Set([...defaultExperienceCategories.filter(x=>used.has(x)),...used])];
@@ -289,10 +291,17 @@ async function openSubtitles(id,button){
  const close=document.createElement('button');close.type='button';close.textContent='닫기';close.className='os-close';
  const content=document.createElement('div');content.textContent='한국어 자막을 불러오고 있습니다.';dialog.append(close,content);document.body.append(dialog);subtitleDialog=dialog;dialog.showModal();close.focus();
  close.addEventListener('click',closeSubtitles);dialog.addEventListener('cancel',event=>{event.preventDefault();closeSubtitles();});
- try{const [data,module]=await Promise.all([api('/api/experiences/'+id+'/subtitles'),import(new URL('./subtitle-player.js?v=20261016-100',document.baseURI))]);if(request!==subtitleRequest||!auth.authenticated)return;subtitlePlayer=module.mountSubtitlePlayer(content,data,{mediaUrl:data.mediaUrl});}
+ try{const [data,module]=await Promise.all([api('/api/experiences/'+id+'/subtitles'),import(new URL('./subtitle-player.js?v=20261016-round2-native-bitchute',document.baseURI))]);if(request!==subtitleRequest||!auth.authenticated)return;subtitlePlayer=module.mountSubtitlePlayer(content,data,{mediaUrl:data.mediaUrl});}
  catch(error){if(request===subtitleRequest){content.textContent=error.message;if(error.status===401){clearCases();auth.authenticated=false;applyLocale();show('auth');}}}
 }
 root.addEventListener('click',event=>{const button=event.target.closest('[data-case-subtitle]');if(button&&auth.authenticated)openSubtitles(button.dataset.caseSubtitle,button);});
+$('#ul-subtitle-catalog-import').addEventListener('change',async event=>{
+ const input=event.target,file=input.files?.[0],notice=$('#ul-subtitle-import-notice');if(!file||!auth.authenticated||!backend)return;
+ const generation=authRequest;input.disabled=true;
+ try{if(file.size>4*1024*1024)throw new Error('자막 자료는 4MB 이하 JSON 파일을 선택하세요.');const bundle=JSON.parse(await file.text());if(bundle.type!=='oly-private-subtitle-bundle'||!Array.isArray(bundle.records))throw new Error('올리링크 자막 자료 파일을 선택하세요.');if(generation!==authRequest||!auth.authenticated)return;
+  const result=await api('/api/subtitles/catalog/import',{records:bundle.records});if(generation!==authRequest||!auth.authenticated)return;experiencesLoaded=false;await loadExperiences();if(generation===authRequest&&auth.authenticated)notice.textContent='자막 '+result.subtitles+'개 등록 · 새 사례 '+result.imported+'개 · 영상 파일도 등록해주세요.';
+ }catch(error){if(generation===authRequest&&auth.authenticated)notice.textContent=error.message;}finally{input.value='';input.disabled=false;}
+});
 $('#ul-subtitle-media-import').addEventListener('change',async event=>{
  const input=event.target,files=Array.from(input.files||[]),notice=$('#ul-subtitle-import-notice');if(!files.length||!auth.authenticated||!backend)return;
  const generation=authRequest;input.disabled=true;
@@ -300,7 +309,37 @@ $('#ul-subtitle-media-import').addEventListener('change',async event=>{
  catch(error){if(generation===authRequest&&auth.authenticated)notice.textContent=error.message;}finally{input.value='';input.disabled=false;}
 });
 
-if(backend)backend.client.auth.onAuthStateChange((event,session)=>{if(!session&&(auth.authenticated||auth.signedIn)){++authRequest;clearCases();auth.authenticated=false;auth.signedIn=false;auth.user=null;applyLocale();show(adminMode?'auth':'home');}});
+if(backend&&['127.0.0.1','localhost'].includes(location.hostname)){
+ const button=document.createElement('button'),notice=document.createElement('p');
+ button.id='ul-prepared-publish';button.type='button';button.hidden=true;button.textContent='준비된80개 온라인 등록';
+ notice.id='ul-prepared-publish-notice';notice.hidden=true;notice.setAttribute('role','status');
+ $('#ul-import-local').after(button,notice);
+ button.addEventListener('click',async()=>{
+  if(!auth.authenticated||preparedPublishController)return;
+  const generation=authRequest,controller=new AbortController();preparedPublishController=controller;button.disabled=true;
+  notice.textContent='관리자 권한과80개 등록 자료를 확인하고 있습니다.';
+  try{
+   const {data,error}=await backend.client.auth.getSession();if(error)throw error;
+   if(!data.session?.access_token||generation!==authRequest||!auth.authenticated)throw new Error('관리자로 다시 로그인해 주세요.');
+   const response=await fetch('/api/subtitles/prepared/publish',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accessToken:data.session.access_token}),signal:controller.signal});
+   if(!response.ok){const error=await response.json();throw new Error(error.error||'등록을 시작하지 못했습니다.');}
+   const reader=response.body.getReader(),decoder=new TextDecoder();let pending='',complete=false;
+   const progress=line=>{
+    const value=JSON.parse(line);if(value.phase==='error')throw new Error(value.error);
+    if(generation!==authRequest||!auth.authenticated){controller.abort();return;}
+    if(value.phase==='catalog')notice.textContent='80개 자막 자료를 관리자 전용으로 등록합니다.';
+    if(value.phase==='media')notice.textContent='영상 등록 '+value.completed+' / '+value.total+' · 기존 파일은 유지합니다.';
+    if(value.phase==='verify')notice.textContent='등록 결과와 비공개 접근 설정을 확인하고 있습니다.';
+    if(value.phase==='complete'){complete=true;notice.textContent='온라인80개 등록 완료 · 영상 '+value.media+'개 · 관리자 전용';}
+   };
+   try{while(true){const {value,done}=await reader.read();pending+=decoder.decode(value||new Uint8Array(),{stream:!done});let end;while((end=pending.indexOf('\n'))>=0){const line=pending.slice(0,end);pending=pending.slice(end+1);if(line.trim())progress(line);}if(done)break;}if(pending.trim())progress(pending);}finally{reader.releaseLock();}
+   if(!complete)throw new Error('등록 연결이 끊겼습니다. 다시 누르면 완료된 파일은 유지하고 이어갑니다.');
+   if(generation===authRequest&&auth.authenticated){experiencesLoaded=false;await loadExperiences();}
+  }catch(error){if(generation===authRequest&&auth.authenticated)notice.textContent=error.name==='AbortError'?'등록을 중단했습니다. 다시 실행하면 이어갑니다.':error.message;}
+  finally{if(preparedPublishController===controller)preparedPublishController=null;button.disabled=false;}
+ });
+}
+if(backend)backend.client.auth.onAuthStateChange((event,session)=>{if(!session&&(auth.authenticated||auth.signedIn)){preparedPublishController?.abort();++authRequest;clearCases();auth.authenticated=false;auth.signedIn=false;auth.user=null;const preparedNotice=$('#ul-prepared-publish-notice');if(preparedNotice)preparedNotice.textContent='';applyLocale();show(adminMode?'auth':'home');}});
 show(adminMode?'auth':'home');applyLocale();refresh().catch(error=>{$('#ul-list').textContent=error.message;});
 })();
 

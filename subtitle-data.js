@@ -1,6 +1,7 @@
 const PROJECT='https://seljcdjixvlguyumifjf.supabase.co';
+export const isNativeSubtitle=data=>!!data&&['Telegram','Bitchute'].includes(data.platform);
 export function validateSubtitle(input) {
-  if(!input||!/^OLY-\d{3}$/.test(input.caseId)||!['YouTube','Vimeo','Telegram'].includes(input.platform))throw new Error('Invalid subtitle identity');
+  if(!input||!/^OLY-\d{3}$/.test(input.caseId)||!['YouTube','Vimeo','Telegram','Bitchute'].includes(input.platform))throw new Error('Invalid subtitle identity');
   if(typeof input.title!=='string'||input.title.length>300||!Number.isFinite(input.start)||!Number.isFinite(input.end)||input.start<0||input.end<=input.start||input.end>86400)throw new Error('Invalid subtitle bounds');
   if(!Array.isArray(input.cues)||!input.cues.length||input.cues.length>2500)throw new Error('Invalid subtitle cues');
   let previous=-1;
@@ -9,9 +10,13 @@ export function validateSubtitle(input) {
     if(typeof cue.ko!=='string'||!cue.ko.trim()||cue.ko.length>4000||typeof cue.original!=='string'||cue.original.length>6000)throw new Error('Invalid subtitle text');
     previous=cue.end;
   }
-  if(input.platform!=='Telegram')embedSource(input,'https://example.test');
+  if(!isNativeSubtitle(input))embedSource(input,'https://example.test');
   const watch=new URL(input.watchUrl);
-  if(watch.protocol!=='https:'||watch.username||watch.password||watch.port||!['www.youtube.com','youtube.com','youtu.be','vimeo.com','www.vimeo.com','t.me'].includes(watch.hostname))throw new Error('Invalid original link');
+  if(watch.protocol!=='https:'||watch.username||watch.password||watch.port||!['www.youtube.com','youtube.com','youtu.be','vimeo.com','www.vimeo.com','t.me','www.bitchute.com','bitchute.com'].includes(watch.hostname))throw new Error('Invalid original link');
+  if(input.platform==='Bitchute'){
+    const id=watch.pathname.match(/^\/video\/([a-zA-Z0-9]{8,24})\/?$/)?.[1],embed=new URL(input.embedUrl);
+    if(!id||!['bitchute.com','www.bitchute.com'].includes(watch.hostname)||embed.protocol!=='https:'||embed.username||embed.password||embed.port||!['bitchute.com','www.bitchute.com'].includes(embed.hostname)||embed.pathname.replace(/\/$/,'')!=='/embed/'+id)throw new Error('Invalid BitChute source');
+  }
   return input;
 }
 export function embedSource(data,origin) {

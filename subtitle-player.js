@@ -1,4 +1,4 @@
-import {validateSubtitle,embedSource,checkedMediaUrl,activeSubtitle,subtitleClock} from './subtitle-data.js';
+import {validateSubtitle,isNativeSubtitle,embedSource,checkedMediaUrl,activeSubtitle,subtitleClock} from './subtitle-data.js?v=20261016-native-bitchute';
 
 const loaders=new Map();
 function script(url,ready){
@@ -16,26 +16,27 @@ function script(url,ready){
 function node(tag,className,text){const result=document.createElement(tag);if(className)result.className=className;if(text!==undefined)result.textContent=text;return result;}
 
 export function mountSubtitlePlayer(container,input,options={}){
-  const data=validateSubtitle(input);
+  const data=validateSubtitle(input),isVisual=data.method==='source-reviewed-visual-summary',isCaptionTranslation=data.method==='source-visible-caption-translation',isTranslation=data.method==='source-segment-translation'||isCaptionTranslation,isSummary=data.method==='source-reviewed-summary'||isVisual;
   if(!document.querySelector('link[data-oly-subtitle-style]')){const style=document.createElement('link');style.rel='stylesheet';style.href=new URL('./subtitle-player.css',import.meta.url).href;style.dataset.olySubtitleStyle='';document.head.append(style);}
   let disposed=false,adapter=null,poll=null,providerTimer=null,played=false,current=data.start,active=null;
   const wrapper=node('section','oly-subtitles');wrapper.setAttribute('aria-label','한국어 자막 영상');
   const heading=node('h2','os-title',data.title);
   const viewer=node('div','os-viewer');
-  const bar=node('div','os-bar'),badge=node('span','','한국어 자막'),expand=node('button','','크게 보기');expand.type='button';expand.setAttribute('aria-expanded','false');bar.append(badge,expand);
+  const bar=node('div','os-bar'),badge=node('span','',isVisual?'한국어 화면 설명':isCaptionTranslation?'한국어 화면자막 번역':isSummary?'한국어 요약 자막':isTranslation?'한국어 구간 번역':'한국어 자막'),expand=node('button','','크게 보기');expand.type='button';expand.setAttribute('aria-expanded','false');bar.append(badge,expand);
   const frame=node('div','os-frame');
   const captions=node('div','os-captions'),ko=node('p','os-ko','재생 버튼을 누르면 한국어 자막이 나옵니다.'),original=node('p','os-original'),uncertain=node('small','os-uncertain');
   original.hidden=true;uncertain.hidden=true;captions.setAttribute('role','region');captions.setAttribute('aria-label','한국어 자막');captions.append(ko,original,uncertain);
   const controls=node('div','os-controls'),label=node('label','','자막 '),mode=node('select');mode.setAttribute('aria-label','자막 표시 언어');
-  for(const[value,text]of [['ko','한국어'],['both','한국어 + 원문'],['off','끄기']]){const option=node('option','',text);option.value=value;mode.append(option);}label.append(mode);
+  const modes=isSummary||data.originalAvailable===false?[['ko','한국어'],['off','끄기']]:[['ko','한국어'],['both','한국어 + 원문'],['off','끄기']];
+  for(const[value,text]of modes){const option=node('option','',text);option.value=value;mode.append(option);}label.append(mode);
   const clock=node('output','os-clock',subtitleClock(data.start));clock.setAttribute('aria-label','영상 재생 시간');controls.append(label,clock);
   viewer.append(bar,frame,captions,controls);
   const status=node('p','os-status','영상을 불러오고 있습니다.');status.setAttribute('role','status');
   const scope=node('p','os-scope',data.scope==='case-segment'?`해당 사례 구간 · ${subtitleClock(data.start)}–${subtitleClock(data.end)}`:'');scope.hidden=data.scope!=='case-segment';
-  const details=node('details','os-transcript'),summary=node('summary','','한국어 전체 대본 · 문장을 누르면 장면 이동'),list=node('ol');details.append(summary,list);
+  const details=node('details','os-transcript'),summary=node('summary','',isSummary?'한국어 내용 정리 · 문장을 누르면 장면 이동':isTranslation?'한국어 구간 대본 · 문장을 누르면 장면 이동':'한국어 전체 대본 · 문장을 누르면 장면 이동'),list=node('ol');details.append(summary,list);
   const rows=new Map();
   for(const cue of data.cues){const li=node('li'),button=node('button'),time=node('time','',subtitleClock(cue.start)),text=node('span','',cue.ko.replaceAll('\n',' '));button.type='button';button.disabled=true;button.append(time,text);button.addEventListener('click',async()=>{if(!adapter||disposed)return;try{await adapter.seek(cue.start+.01);if(disposed)return;await adapter.play();}catch{message('영상 재생 버튼을 누른 뒤 다시 선택해주세요.',true);}});li.append(button);list.append(li);rows.set(cue.id,{li,button});}
-  const note=node('p','os-note',data.method==='provided-korean-caption-edited'?'제공된 한국어 자동자막을 다듬었습니다.':'원문 자막·음성전사에 기반한 번역입니다. 영상 속 개인의 발언을 옮겼으며 내용의 독립 검증은 아닙니다.');
+  const note=node('p','os-note',isCaptionTranslation?'영상에 이미 표시된 원문 화면 자막의 선택 구간을 한국어로 옮겼습니다. 장면을 초 단위로 대조한 번역 초안이며, 원음 전체 청취 검수나 영상 전체의 완역은 아닙니다.':isVisual?'영상의 화면 문구를 번역하고 확인한 장면을 한국어로 설명한 자료입니다. 음성 번역이 아니며, 전후 표시나 동작만으로 제품 효과를 검증한 것은 아닙니다.':isSummary?'원문 발언의 선택 구간을 정리한 한국어 요약 자막입니다. 발언 전체의 직역은 아니며, 체험자의 주장이나 신원을 독립 검증한 자료가 아닙니다.':isTranslation?'표시된 선택 구간의 음성전사에 기반한 한국어 번역 초안입니다. 원문 인식이 불명확한 부분은 별도 표시했습니다. 영상 전체의 번역이나 발언 내용의 독립 검증은 아닙니다.':data.method==='provided-korean-caption-edited'?'제공된 한국어 자동자막을 다듬었습니다.':'원문 자막·음성전사에 기반한 번역입니다. 영상 속 개인의 발언을 옮겼으며 내용의 독립 검증은 아닙니다.');
   const sourceLink=node('a','os-source','원본 영상 보기 ↗');sourceLink.href=data.watchUrl;sourceLink.target='_blank';sourceLink.rel='noopener noreferrer';
   wrapper.append(heading,viewer,status,scope,details,sourceLink,note);container.replaceChildren(wrapper);
   function message(text,error=false){if(disposed)return;status.textContent=text;status.dataset.error=String(error);}
@@ -57,7 +58,7 @@ export function mountSubtitlePlayer(container,input,options={}){
   function error(text){if(disposed)return;clearTimeout(providerTimer);message(text,true);details.open=true;options.onError?.({caseId:data.caseId,message:text});}
   const promise=(async()=>{
     try{
-      if(data.platform==='Telegram'){
+      if(isNativeSubtitle(data)){
         const video=node('video');video.controls=true;video.playsInline=true;video.preload='metadata';video.setAttribute('controlslist','nofullscreen noremoteplayback');video.disablePictureInPicture=true;
         video.src=checkedMediaUrl(options.mediaUrl||data.mediaUrl,data.caseId,location.origin);frame.append(video);
         adapter={seek:async seconds=>{video.currentTime=seconds;},play:()=>video.play(),pause:()=>video.pause(),destroy:()=>{video.pause();video.removeAttribute('src');video.load();}};
