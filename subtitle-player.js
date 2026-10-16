@@ -18,7 +18,7 @@ function node(tag,className,text){const result=document.createElement(tag);if(cl
 export function mountSubtitlePlayer(container,input,options={}){
   const data=validateSubtitle(input);
   if(!document.querySelector('link[data-oly-subtitle-style]')){const style=document.createElement('link');style.rel='stylesheet';style.href=new URL('./subtitle-player.css',import.meta.url).href;style.dataset.olySubtitleStyle='';document.head.append(style);}
-  let disposed=false,adapter=null,poll=null,played=false,current=data.start,active=null;
+  let disposed=false,adapter=null,poll=null,providerTimer=null,played=false,current=data.start,active=null;
   const wrapper=node('section','oly-subtitles');wrapper.setAttribute('aria-label','한국어 자막 영상');
   const heading=node('h2','os-title',data.title);
   const viewer=node('div','os-viewer');
@@ -53,8 +53,8 @@ export function mountSubtitlePlayer(container,input,options={}){
     if(played&&seconds>=data.end-.02){adapter?.pause();message('해당 사례 구간이 끝났습니다. 대본을 눌러 다시 볼 수 있습니다.');}
   }
   mode.addEventListener('change',()=>render(current));
-  function ready(){if(disposed)return;for(const row of rows.values())row.button.disabled=false;message('재생 버튼을 누르면 영상 아래에 한국어 자막이 나옵니다.');options.onReady?.(data.caseId);}
-  function error(text){message(text,true);details.open=true;options.onError?.({caseId:data.caseId,message:text});}
+  function ready(){if(disposed)return;clearTimeout(providerTimer);for(const row of rows.values())row.button.disabled=false;message('재생 버튼을 누르면 영상 아래에 한국어 자막이 나옵니다.');options.onReady?.(data.caseId);}
+  function error(text){if(disposed)return;clearTimeout(providerTimer);message(text,true);details.open=true;options.onError?.({caseId:data.caseId,message:text});}
   const promise=(async()=>{
     try{
       if(data.platform==='Telegram'){
@@ -75,10 +75,11 @@ export function mountSubtitlePlayer(container,input,options={}){
       }else{
         if(!window.onYouTubeIframeAPIReady)window.onYouTubeIframeAPIReady=()=>{};
         await script('https://www.youtube.com/iframe_api',()=>!!window.YT?.Player);if(disposed)return;
+        providerTimer=setTimeout(()=>error('유튜브 연결에 응답이 없습니다. 원본 링크와 한국어 대본을 이용해주세요.'),15000);
         const player=new window.YT.Player(iframe,{events:{onReady:()=>{if(disposed)return;ready();poll=setInterval(()=>{if(!disposed&&typeof player.getCurrentTime==='function')render(player.getCurrentTime());},250);},onStateChange:event=>{if(event.data===1)played=true;},onError:event=>error('유튜브에서 재생을 허용하지 않았습니다 ('+event.data+'). 원본 링크와 대본을 확인해주세요.')}});
         adapter={seek:async seconds=>{player.seekTo(seconds,true);},play:async()=>{player.playVideo();},pause:()=>player.pauseVideo?.(),destroy:()=>player.destroy()};
       }
     }catch{if(!disposed)error('영상 연결을 확인하지 못했습니다. 원본 링크와 전체 대본을 이용해주세요.');}
   })();
-  return {ready:promise,destroy(){if(disposed)return;disposed=true;if(poll)clearInterval(poll);document.removeEventListener('keydown',key);try{adapter?.destroy();}finally{container.replaceChildren();}},element:wrapper};
+  return {ready:promise,destroy(){if(disposed)return;disposed=true;if(poll)clearInterval(poll);clearTimeout(providerTimer);document.removeEventListener('keydown',key);try{adapter?.destroy();}finally{container.replaceChildren();}},element:wrapper};
 }

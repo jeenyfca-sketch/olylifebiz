@@ -289,7 +289,7 @@ async function openSubtitles(id,button){
  const close=document.createElement('button');close.type='button';close.textContent='닫기';close.className='os-close';
  const content=document.createElement('div');content.textContent='한국어 자막을 불러오고 있습니다.';dialog.append(close,content);document.body.append(dialog);subtitleDialog=dialog;dialog.showModal();close.focus();
  close.addEventListener('click',closeSubtitles);dialog.addEventListener('cancel',event=>{event.preventDefault();closeSubtitles();});
- try{const [data,module]=await Promise.all([api('/api/experiences/'+id+'/subtitles'),import(new URL('./subtitle-player.js?v=1',document.baseURI))]);if(request!==subtitleRequest||!auth.authenticated)return;subtitlePlayer=module.mountSubtitlePlayer(content,data,{mediaUrl:data.mediaUrl});}
+ try{const [data,module]=await Promise.all([api('/api/experiences/'+id+'/subtitles'),import(new URL('./subtitle-player.js?v=20261016-100',document.baseURI))]);if(request!==subtitleRequest||!auth.authenticated)return;subtitlePlayer=module.mountSubtitlePlayer(content,data,{mediaUrl:data.mediaUrl});}
  catch(error){if(request===subtitleRequest){content.textContent=error.message;if(error.status===401){clearCases();auth.authenticated=false;applyLocale();show('auth');}}}
 }
 root.addEventListener('click',event=>{const button=event.target.closest('[data-case-subtitle]');if(button&&auth.authenticated)openSubtitles(button.dataset.caseSubtitle,button);});
