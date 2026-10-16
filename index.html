@@ -72,6 +72,8 @@
  </div><div data-panel="auth" hidden>
  <h2 id="ul-auth-title">관리자 로그인</h2>
  <p id="ul-auth-description" class="ul-sub"></p>
+ <button id="ul-google-login" class="ul-google-login" type="button" hidden>Google 계정으로 로그인</button>
+ <p id="ul-google-help" class="ul-sub" hidden></p>
  <form id="ul-auth-form"><label id="ul-email-label" hidden>이메일<input name="email" type="email" autocomplete="username"></label><label>비밀번호<input name="password" type="password" minlength="10" maxlength="128" autocomplete="current-password" required></label>
  <button type="submit" class="ul-primary" id="ul-auth-submit">로그인</button></form>
  <div id="ul-auth-notice" role="alert"></div></div>
@@ -107,7 +109,7 @@
           <h3>등록된 미팅</h3><div id="ul-meeting-admin-list"></div>
         </div>
       </main>
-      <footer hidden><button id="ul-login" type="button" hidden>관리자 로그인</button><button id="ul-logout" type="button" hidden>로그아웃</button></footer>
+      <footer hidden><span id="ul-account-name" hidden></span><button id="ul-user-login" type="button" hidden>로그인</button><button id="ul-login" type="button" hidden>관리자 로그인</button><button id="ul-logout" type="button" hidden>로그아웃</button></footer>
     </section>
   </div>
 </div>
@@ -177,6 +179,8 @@
 #ulilife-preview .ul-app-nav {flex-wrap:wrap;}
 #ulilife-preview .ul-app-nav button {flex:1 1 calc((100% - 24px)/4);min-width:0;padding:10px 6px;font-size:13px;line-height:1.4;}
 #ulilife-preview .ul-auth-error {color:#8c2525;}
+#ulilife-preview .ul-google-login {width:100%;min-height:44px;background:#fff;color:#1f1f1f;border:1px solid #747775;margin:0 0 12px;font-weight:600;}
+#ulilife-preview #ul-account-name {align-self:center;overflow-wrap:anywhere;}
 #ulilife-preview input:disabled {opacity:.6;}
 #ulilife-preview .ul-home-title {font-size:28px;line-height:1.35;letter-spacing:-1px;margin:12px 0 14px;text-wrap:balance;word-break:keep-all;}
 #ulilife-preview .ul-home-lead {font-size:15px;margin:0 0 8px;line-height:1.6;}
@@ -192,4 +196,4 @@
 #ulilife-preview .ul-home-card:focus-visible,#ulilife-preview .ul-home-cta:focus-visible {outline:3px solid var(--ul-green);outline-offset:3px;}
 </style>
 
-<script src="./cloud.js?v=fb0f0fc6e3b4"></script><script src="./app.js?v=0d9ead7ab681"></script></body></html>
+<script src="./cloud.js?v=cd857ef87c30"></script><script src="./app.js?v=c9638d82d6a7"></script></body></html>
