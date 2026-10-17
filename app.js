@@ -201,8 +201,6 @@ $('#ul-admin-nav').hidden=!auth.authenticated;
 $('#ul-login').hidden=!adminMode||auth.authenticated;
 $('#ul-user-login').hidden=adminMode||!backend||!auth.googleEnabled||auth.signedIn;
 $('#ul-logout').hidden=!(auth.authenticated||auth.signedIn);
-$('#ul-account-name').hidden=!auth.signedIn;
-$('#ul-account-name').textContent=auth.user?.name||'';
 $('footer').hidden=$('#ul-login').hidden&&$('#ul-user-login').hidden&&$('#ul-logout').hidden;
 render();renderMeetings();renderExperiences();if(detailId)detail(detailId);}
 function render(){const panel=$('#ul-detail');$('#ul-list').after(panel);const q=$('#ul-search').value.trim().toLowerCase();const list=materials.filter(x=>!q||x.title.toLowerCase().includes(q));$('#ul-count').textContent=locale==='ko'?'자료 '+list.length+'개':locale==='en'?list.length+' materials':locale==='ja'?'資料 '+list.length+'件':'资料 '+list.length+'份';$('#ul-list').innerHTML=list.length?list.map(x=>'<article class="ul-item"><span class="ul-tag">'+esc(x.language)+'</span><h3>'+esc(x.title)+'</h3><button type="button" data-view="'+esc(x.id)+'" aria-expanded="false" aria-controls="ul-detail">'+t('자료 보기')+'</button></article>').join(''):'<p class="ul-sub">'+t(q?'검색 조건에 맞는 자료가 없습니다.':'등록된 자료가 없습니다.')+'</p>';$('#ul-admin-list').innerHTML=auth.authenticated?materials.map(x=>'<article class="ul-item"><h3>'+esc(x.title)+'</h3><div class="ul-meta">'+esc(x.language)+'</div><button type="button" data-edit="'+esc(x.id)+'">'+t('수정하기')+'</button></article>').join(''):'';}
