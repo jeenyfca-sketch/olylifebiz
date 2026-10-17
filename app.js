@@ -28,7 +28,6 @@ const translations={
 "온라인 설명회도 앱에서":["Online sessions, right from the app","オンライン説明会もアプリから","在线说明会，也能从应用参与"],
 "일정을 확인하고 구글 미팅으로 바로 참여.":["Check the schedule and join through Google Meet.","日程を確認してGoogle Meetで参加。","查看日程，通过Google Meet直接参与。"],
 "궁금할 땐 카카오톡으로":["Questions? Connect on KakaoTalk","質問はカカオトークで","有疑问，通过KakaoTalk联系"],
-"시안 킴과 소통하며 함께 시작하기.":["Connect with Seean Kim and get started together.","Seean Kimと話して、一緒に始めましょう。","与Seean Kim交流，一起开始。"],
 "앱으로 알아보고 → 톡으로 연결하고 → 함께 사업을 시작하세요.":["Explore in the app → Connect on KakaoTalk → Start your business together.","アプリで知る → トークでつながる → ともにビジネスを始める。","通过应用了解 → 通过聊天连接 → 一起开启事业。"],
 "카카오톡으로 시작하기":["Get started on KakaoTalk","カカオトークで始める","通过KakaoTalk开始"],
 
@@ -53,7 +52,7 @@ const translations={
  '참여 링크 준비 중':['Join link not available yet','参加リンクは準備中','参会链接待公布'],
  '자료 언어':['Material language','資料の言語','资料语言'],
  '제품명 또는 강의 제목 검색':['Search product or lecture title','製品名・講義名で検索','搜索产品或课程名称'],
- 'seean 전용':['For seean','seean 専用','seean 专用'],
+ '관리자 전용':['Administrators only','管理者専用','仅限管理员'],
  '자료 관리':['Manage materials','資料管理','资料管理'],
  '자료를 등록하고 내용을 수정합니다.':['Add materials and edit details.','資料の登録と内容の編集ができます。','添加资料并修改内容。'],
  '관리자 화면 미리보기 · 로그인 기능 연결 전':['Admin preview · Sign-in not connected','管理者プレビュー · ログイン未接続','管理员预览 · 尚未连接登录'],
