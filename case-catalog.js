@@ -1,5 +1,6 @@
 // Source links are optional: a summary-only case remains a valid entry.
 const categoryAliases = {
+  '뇌':'뇌·두통', '두통':'뇌·두통',
   '관절·무릎':'다리·무릎', '보행·다리':'다리·무릎',
   '보행·균형':'다리·무릎', '움직임·균형':'다리·무릎',
   '사용 편의':'사용감·불편', '소화·식욕':'소화·배변',

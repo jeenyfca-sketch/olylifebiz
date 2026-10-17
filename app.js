@@ -8,7 +8,7 @@ function normalizeMeetingLink(raw) {
 }
 (async () => {
 const backend = await window.olyCloudReady;
-const {normalizeCases,importCaseRows} = await import(new URL('./case-catalog.js?v=categories2',document.baseURI));
+const {normalizeCases,importCaseRows} = await import(new URL('./case-catalog.js?v=categories3',document.baseURI));
 const adminMode = new URLSearchParams(location.search).get('admin') === '1';
 const root=document.getElementById('ulilife-preview'), $=s=>root.querySelector(s);
 const translations={
@@ -170,7 +170,7 @@ const knownLocales=['ko','en','ja','zh'];
 let locale='ko';try { const saved=localStorage.getItem('olylife_locale');if(knownLocales.includes(saved))locale=saved; } catch {}
 let experiences=[],experiencesLoaded=false,experiencesLoading=false,experiencesFailed=false,experienceCategory='',caseEditId=null,caseRequest=0;
 const defaultExperienceCategories=[
- '뇌','두통','눈·시야','이명','턱·얼굴·코','어깨·목','손·팔','허리·등','고관절','다리·무릎',
+ '뇌·두통','눈·시야','이명','턱·얼굴·코','어깨·목','손·팔','허리·등','고관절','다리·무릎',
  '기억·인지','파킨슨 관련','신경·저림·경련','수면','기분·활력','온감·냉감','순환·붓기',
  '혈압·혈당·대사','소화·배변','비뇨·야간뇨','피부','다이어트','운동·회복','연전현상 이완','사용감·불편'
 ];
