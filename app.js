@@ -172,7 +172,7 @@ let experiences=[],experiencesLoaded=false,experiencesLoading=false,experiencesF
 const defaultExperienceCategories=[
  '뇌·두통','치매','눈·시야','얼굴·귀·코·턱','어깨·목','손·팔','허리·등','고관절','다리','무릎','다리·무릎',
  '기억·인지','파킨슨 관련','신경·저림·경련','수면','기분·활력','온감·냉감','순환·붓기',
- '혈압·혈당·대사','소화·배변','비뇨·야간뇨','피부','다이어트','운동·회복','연전현상 이완','사용감·불편'
+ '혈압·혈당·대사','소화·배변','신장·방광','비뇨·야간뇨','정력·성기능','여성 요실금','피부','다이어트','운동·회복','연전현상 이완','사용감·불편'
 ];
 let materials=[],meetings=[],auth={initialized:!!backend,authenticated:false,signedIn:false},section='home',editId=null,meetingEditId=null,detailId=null,authRequest=0;
 let preparedPublishController=null;
@@ -258,7 +258,7 @@ function renderExperiences(){
  $('#ul-cases-nav').hidden=!available;$('#ul-home-cases').hidden=!available;$('#ul-case-tools').hidden=!auth.authenticated;$('#ul-subtitle-import-label').hidden=!auth.authenticated||!backend;$('#ul-subtitle-catalog-label').hidden=!auth.authenticated||!backend;
  $('#ul-home-title').textContent=t(available?'사례·교육·설명회를 하나의 앱으로.':'교육·설명회를 하나의 앱으로.');
  root.querySelectorAll('.ul-app-nav button:not([hidden])').forEach(b=>b.style.flexBasis=available?'calc((100% - 24px)/4)':'calc((100% - 16px)/3)');
- const used=new Set(experiences.flatMap(x=>x.categories));const categories=[...new Set([...defaultExperienceCategories.filter(x=>used.has(x)||x==='치매'),...used])];
+ const used=new Set(experiences.flatMap(x=>x.categories));const categories=[...new Set([...defaultExperienceCategories.filter(x=>used.has(x)||['치매','신장·방광','정력·성기능','여성 요실금'].includes(x)),...used])];
  $('#ul-experience-categories').innerHTML=[['','전체'],...categories.map(value=>[value,value])].map(([value,label])=>'<button type="button" data-case-category="'+esc(value)+'" aria-pressed="'+String(value===experienceCategory)+'">'+esc(t(label))+'</button>').join('');
 
  const country=$('#ul-experience-country'),language=$('#ul-experience-language');
