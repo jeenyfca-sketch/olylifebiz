@@ -1,4 +1,9 @@
 // Source links are optional: a summary-only case remains a valid entry.
+const categoryAliases = {
+  '보행·균형':'보행·다리', '움직임·균형':'보행·다리',
+  '사용 편의':'사용감·불편', '소화·식욕':'소화·배변',
+  '야간뇨·배뇨':'비뇨·야간뇨', '피부·사용감':'피부'
+};
 export function normalizeCases(input) {
   if (!Array.isArray(input)) throw new Error('Invalid case catalog');
   return input.flatMap(item => {
@@ -13,7 +18,7 @@ export function normalizeCases(input) {
     } catch {}
     if (!summary && !url) return [];
     const categories = [...new Set((Array.isArray(item.categories) ? item.categories : typeof item.category === 'string' ? [item.category] : [])
-      .filter(value => typeof value === 'string' && value.trim()).map(value => value.trim()))];
+      .filter(value => typeof value === 'string' && value.trim()).map(value => categoryAliases[value.trim()] ?? value.trim()))];
     return [{id:item.id, title:item.title.trim(), country:typeof item.country === 'string' ? item.country : '',
       language:typeof item.language === 'string' ? item.language : '', categories, summary, url,
       media_type:item.media_type==='video'?'video':'document',visibility:item.visibility==='public'?'public':'admin',

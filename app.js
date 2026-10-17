@@ -8,7 +8,7 @@ function normalizeMeetingLink(raw) {
 }
 (async () => {
 const backend = await window.olyCloudReady;
-const {normalizeCases,importCaseRows} = await import(new URL('./case-catalog.js?v=private1',document.baseURI));
+const {normalizeCases,importCaseRows} = await import(new URL('./case-catalog.js?v=categories1',document.baseURI));
 const adminMode = new URLSearchParams(location.search).get('admin') === '1';
 const root=document.getElementById('ulilife-preview'), $=s=>root.querySelector(s);
 const translations={
@@ -169,7 +169,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const knownLocales=['ko','en','ja','zh'];
 let locale='ko';try { const saved=localStorage.getItem('olylife_locale');if(knownLocales.includes(saved))locale=saved; } catch {}
 let experiences=[],experiencesLoaded=false,experiencesLoading=false,experiencesFailed=false,experienceCategory='',caseEditId=null,caseRequest=0;
-const defaultExperienceCategories=['관절·무릎','허리·등','어깨·목','보행·다리','파킨슨 관련','기억·인지','수면','신경·저림·경련','순환·붓기','혈압·혈당·대사','비뇨·야간뇨','기분·활력','소화·배변','눈·시야','피부','두통','사용감·불편','사용 편의'];
+const defaultExperienceCategories=['관절·무릎','허리·등','어깨·목','보행·다리','파킨슨 관련','기억·인지','수면','신경·저림·경련','순환·붓기','혈압·혈당·대사','비뇨·야간뇨','기분·활력','소화·배변','눈·시야','피부','두통','사용감·불편'];
 let materials=[],meetings=[],auth={initialized:!!backend,authenticated:false,signedIn:false},section='home',editId=null,meetingEditId=null,detailId=null,authRequest=0;
 let preparedPublishController=null;
 const textNodes=[],attrs=[];
