@@ -10,6 +10,7 @@ function normalizeMeetingLink(raw) {
 const backend = await window.olyCloudReady;
 const {normalizeCases,importCaseRows} = await import(new URL('./case-catalog.js?v=categories5',document.baseURI));
 const {getCaseCuration,curateCases,curationCounts} = await import(new URL('./case-curation.js?v=1',document.baseURI));
+const {getMaterialVideos} = await import(new URL('./material-videos.js?v=1',document.baseURI));
 const adminMode = new URLSearchParams(location.search).get('admin') === '1';
 const root=document.getElementById('ulilife-preview'), $=s=>root.querySelector(s);
 const translations={
@@ -216,6 +217,8 @@ function detail(id,toggle=false){
  const downloadUrl=backend?backend.fileUrl(x,true):url+'?download=1';
  panel.hidden=false;
  panel.innerHTML='<div class="ul-meta">'+esc(x.filename)+'</div><div class="ul-actions"><a class="ul-kakao-link" href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">'+t('PDF 열기')+'</a><a class="ul-kakao-link" href="'+esc(downloadUrl)+'">'+t('PDF 내려받기')+'</a></div>'+(x.description?'<p>'+esc(x.description)+'</p>':'')+(x.source?'<span class="ul-tag">'+t('출처·근거 범위')+'</span><p>'+esc(x.source)+'</p>':'');
+ const videos=getMaterialVideos(id);
+ if(videos.length)panel.innerHTML+='<section class="ul-material-videos" aria-label="비지니스 플랜 영상"><h4>비지니스 플랜 · 원본영상 '+videos.length+'개</h4><p class="ul-meta">유튜브 설정 → 자막 → 자동번역 → 한국어로 시청할 수 있습니다.</p>'+videos.map(v=>'<article class="ul-material-video"><span class="ul-tag">'+esc(v.channel)+'</span><p class="ul-material-original">'+esc(v.title)+'</p><span class="ul-meta">한국어 제목 번역</span><h4>'+esc(v.titleKo)+'</h4><p>'+esc(v.summaryKo)+'</p><p class="ul-meta">게시자 설명 기준 요약 · 영상 전체 발언 번역은 아닙니다.</p><a class="ul-kakao-link" href="'+esc(v.url)+'" target="_blank" rel="noopener noreferrer">원본 영상 보기 ↗</a></article>').join('')+'</section>';
 }
 function clearCases(){closeSubtitles();++caseRequest;experiences=[];experiencesLoaded=false;experiencesLoading=false;$('#ul-case-form').reset();$('#ul-case-form').hidden=true;$('#ul-experience-list').replaceChildren();$('#ul-case-tools').hidden=true;$('#ul-cases-nav').hidden=true;$('#ul-home-cases').hidden=true;}
 async function refresh(){const request=++authRequest;clearCases();const results=await Promise.all([api('/api/auth/status'),api('/api/materials'),api('/api/meetings')]);if(request!==authRequest)return;[auth,materials,meetings]=results;if(!adminMode)auth.authenticated=false;applyLocale();if(auth.loginError){$('#ul-auth-notice').textContent=t(auth.loginError);show('auth');}else if(adminMode&&auth.signedIn&&!auth.authenticated){$('#ul-auth-notice').textContent=t('이 계정에는 관리자 권한이 없습니다.');}await loadExperiences();if(adminMode&&section==='auth'&&auth.authenticated)show('admin');if(section==='experiences'&&!auth.authenticated&&!experiences.length)show('home');}
