@@ -11,12 +11,30 @@ const backend = await window.olyCloudReady;
 const {normalizeCases,importCaseRows} = await import(new URL('./case-catalog.js?v=categories5',document.baseURI));
 const {getCaseCuration,curateCases,curationCounts} = await import(new URL('./case-curation.js?v=1',document.baseURI));
 const {getMaterialVideos} = await import(new URL('./material-videos.js?v=1',document.baseURI));
+const {groupMeetings} = await import(new URL('./meeting-schedule.js?v=1',document.baseURI));
 const adminMode = new URLSearchParams(location.search).get('admin') === '1';
 const root=document.getElementById('ulilife-preview'), $=s=>root.querySelector(s);
+const inquiryUrl = $('.ul-direct-inquiry').href;
 const translations={
+ 'QR 보기':['Show QR','QRを表示','显示二维码'],
+ 'QR 닫기':['Close QR','QRを閉じる','关闭二维码'],
+ '카카오톡 문의 QR코드':['KakaoTalk contact QR code','カカオトークお問い合わせ用QRコード','KakaoTalk咨询二维码'],
+ '휴대폰 카메라로 QR코드를 스캔해 주세요.':['Scan the QR code with your phone camera.','スマートフォンのカメラでQRコードを読み取ってください。','请使用手机相机扫描二维码。'],
+ '처음 오셨나요?':['New to OlyLINK?','初めてご利用ですか？','初次使用？'],
+ '자료실에서 사업 소개를 살펴보세요. 설명회에 참여하거나 카카오톡으로 궁금한 점을 물어볼 수 있습니다.':['Explore the business introduction in the library. Join a session or ask your questions on KakaoTalk.','資料室でビジネスの紹介をご覧ください。説明会への参加や、カカオトークでのご質問もできます。','在资料库了解事业介绍。您可以参加说明会，或通过KakaoTalk咨询。'],
+ '자료실부터 둘러보기':['Explore the library first','まず資料室を見る','先浏览资料库'],
+ '자료를 보고 궁금한 점이 생기셨나요?':['Questions about this material?','この資料についてご質問はありますか？','对这份资料有疑问？'],
+ '이 자료 문의하기':['Ask about this material','この資料について問い合わせる','咨询这份资料'],
+ '오늘·예정 일정':['Today & upcoming','本日・今後の予定','今天与未来日程'],
+ '지난 일정 보기':['View past sessions','過去の日程を見る','查看往期日程'],
+ '지난 일정':['Past session','過去の日程','往期日程'],
+ '예정된 일정이 없습니다. 새 설명회 일정은 카카오톡으로 문의해 주세요.':['No upcoming sessions. Ask about the next session on KakaoTalk.','今後の予定はありません。次回の説明会はカカオトークでお問い合わせください。','暂无未来日程。请通过KakaoTalk咨询下次说明会。'],
+ '참여 링크를 준비하고 있습니다. 참여 방법은 카카오톡으로 문의해 주세요.':['The join link is being prepared. Ask how to join on KakaoTalk.','参加リンクは準備中です。参加方法はカカオトークでお問い合わせください。','参会链接正在准备中。请通过KakaoTalk咨询参与方式。'],
+ '참여 방법 문의':['Ask how to join','参加方法を問い合わせる','咨询参与方式'],
+ '일정 확인 필요':['Schedule to be confirmed','日程の確認が必要です','日程待确认'],
 "홈":["Home","ホーム","首页"],
-"교육·설명회를 하나의 앱으로.":["Learning and sessions in one app.","学び・説明会をひとつのアプリで。","学习与说明会，尽在一个应用。"],
-"설명회·교육":["Sessions & learning","説明会・教育","说明会与培训"],
+"Olylife 비지니스를 하나의 앱으로.":["Olylife business in one app.","Olylifeビジネスをひとつのアプリで。","Olylife事业，尽在一个应用。"],
+"구글미팅":["Google Meet","Google Meet","Google Meet"],
 "설명회":["Sessions","説明会","说明会"],
 "교육":["Learning","教育","培训"],
 "사례·교육·설명회를 하나의 앱으로.":["Stories, learning and sessions in one app.","事例・学び・説明会をひとつのアプリで。","案例、学习与说明会，尽在一个应用。"],
@@ -185,6 +203,8 @@ root.querySelectorAll('[placeholder],[aria-label]').forEach(el=>{for(const name 
 async function api(url,body){if(backend)return backend.api(url,body);const res=await fetch(url,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{});const data=await res.json();if(!res.ok){const error=new Error(data.error||'Request failed');error.status=res.status;throw error;}return data;}
 function show(value){if(value==='experiences'&&!(auth.authenticated||experiences.some(x=>x.visibility==='public')))value=adminMode?'auth':'home';if(value==='experiences')loadExperiences();if(!adminMode&&(['admin','meeting-admin'].includes(value)||(value==='auth'&&!auth.googleEnabled)))value='library';section=value;if(section==='meetings'&&auth.authenticated)section='meeting-admin';if(['admin','meeting-admin'].includes(section)&&!auth.authenticated)section='auth';root.querySelectorAll('[data-panel]').forEach(p=>p.hidden=p.dataset.panel!==section);root.querySelectorAll('.ul-app-nav [data-section]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.section===section)));}
 function applyLocale(){
+$('#ul-kakao-qr-toggle').textContent=t($('#ul-kakao-qr-panel').hidden?'QR 보기':'QR 닫기');
+$('#ul-kakao-qr-panel img').alt=t('카카오톡 문의 QR코드');
 $('#ul-email-label').hidden=!backend;
 $('#ul-auth-form').elements.email.required=!!backend;
 $('#ul-auth-form').elements.password.minLength=backend?6:10;
@@ -219,11 +239,13 @@ function detail(id,toggle=false){
  panel.innerHTML='<div class="ul-meta">'+esc(x.filename)+'</div><div class="ul-actions"><a class="ul-kakao-link" href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">'+t('PDF 열기')+'</a><a class="ul-kakao-link" href="'+esc(downloadUrl)+'">'+t('PDF 내려받기')+'</a></div>'+(x.description?'<p>'+esc(x.description)+'</p>':'')+(x.source?'<span class="ul-tag">'+t('출처·근거 범위')+'</span><p>'+esc(x.source)+'</p>':'');
  const videos=getMaterialVideos(id);
  if(videos.length)panel.innerHTML+='<section class="ul-material-videos" aria-label="비지니스 플랜 영상"><h4>비지니스 플랜 · 원본영상 '+videos.length+'개</h4><p class="ul-meta">유튜브 설정 → 자막 → 자동번역 → 한국어로 시청할 수 있습니다.</p>'+videos.map(v=>'<article class="ul-material-video"><span class="ul-tag">'+esc(v.channel)+'</span><p class="ul-material-original">'+esc(v.title)+'</p><span class="ul-meta">한국어 제목 번역</span><h4>'+esc(v.titleKo)+'</h4><p>'+esc(v.summaryKo)+'</p><p class="ul-meta">게시자 설명 기준 요약 · 영상 전체 발언 번역은 아닙니다.</p><a class="ul-kakao-link" href="'+esc(v.url)+'" target="_blank" rel="noopener noreferrer">원본 영상 보기 ↗</a></article>').join('')+'</section>';
+ panel.innerHTML+='<div class="ul-material-inquiry"><p>'+t('자료를 보고 궁금한 점이 생기셨나요?')+'</p><a class="ul-kakao-link" href="'+esc(inquiryUrl)+'" target="_blank" rel="noopener noreferrer">'+t('이 자료 문의하기')+'</a></div>';
 }
 function clearCases(){closeSubtitles();++caseRequest;experiences=[];experiencesLoaded=false;experiencesLoading=false;$('#ul-case-form').reset();$('#ul-case-form').hidden=true;$('#ul-experience-list').replaceChildren();$('#ul-case-tools').hidden=true;$('#ul-cases-nav').hidden=true;$('#ul-home-cases').hidden=true;}
 async function refresh(){const request=++authRequest;clearCases();const results=await Promise.all([api('/api/auth/status'),api('/api/materials'),api('/api/meetings')]);if(request!==authRequest)return;[auth,materials,meetings]=results;if(!adminMode)auth.authenticated=false;applyLocale();if(auth.loginError){$('#ul-auth-notice').textContent=t(auth.loginError);show('auth');}else if(adminMode&&auth.signedIn&&!auth.authenticated){$('#ul-auth-notice').textContent=t('이 계정에는 관리자 권한이 없습니다.');}await loadExperiences();if(adminMode&&section==='auth'&&auth.authenticated)show('admin');if(section==='experiences'&&!auth.authenticated&&!experiences.length)show('home');}
 root.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.section)show(b.dataset.section);if(['ul-login','ul-user-login'].includes(b.id)){show('auth');$('#ul-auth-notice').textContent='';}if(b.dataset.view)detail(b.dataset.view,true);if(b.dataset.edit){const x=materials.find(x=>x.id===b.dataset.edit);editId=x.id;for(const key of ['title','language','description','source'])$('#ul-form').elements.namedItem(key).value=x[key];$('#ul-form').elements.file.value='';$('#ul-cancel').hidden=false;applyLocale();$('#ul-form').scrollIntoView({block:'start',behavior:'smooth'});}});
 $('#ul-locale').addEventListener('change',e=>{locale=e.target.value;try {localStorage.setItem('olylife_locale',locale);}catch {}applyLocale();});
+$('#ul-kakao-qr-toggle').addEventListener('click',()=>{const panel=$('#ul-kakao-qr-panel'),button=$('#ul-kakao-qr-toggle'),expanded=panel.hidden;panel.hidden=!expanded;button.setAttribute('aria-expanded',String(expanded));button.textContent=t(expanded?'QR 닫기':'QR 보기');});
 $('#ul-search').addEventListener('input',()=>{render();detailId=null;$('#ul-detail').hidden=true;});
 function reset(){editId=null;$('#ul-form').reset();$('#ul-cancel').hidden=true;applyLocale();}
 $('#ul-cancel').addEventListener('click',reset);
@@ -234,8 +256,11 @@ function fileBase64(file){return new Promise((resolve,reject)=>{const reader=new
 $('#ul-form').addEventListener('submit',async e=>{e.preventDefault();const button=$('#ul-save'),form=e.target,file=form.elements.file.files[0];$('#ul-notice').textContent='';button.disabled=true;button.textContent=t('저장 중…');try{if(!editId&&!file)throw new Error('파일을 선택하세요.');if(file&&(!/\.pdf$/i.test(file.name)))throw new Error('PDF 파일만 등록할 수 있습니다.');if(file&&file.size>15*1024*1024)throw new Error('PDF 최대 크기는 15MB입니다.');const input={};for(const key of ['title','language','description','source'])input[key]=form.elements.namedItem(key).value;if(editId)input.id=editId;if(file){input.filename=file.name;input.fileBase64=await fileBase64(file);}await api('/api/materials',input);detailId=null;$('#ul-detail').hidden=true;await refresh();reset();$('#ul-notice').textContent=t('자료를 저장했습니다.');}catch(error){if(error.status===401){auth.authenticated=false;applyLocale();show('auth');$('#ul-auth-notice').textContent=t(error.message);}else $('#ul-notice').textContent=t(error.message);}finally{button.disabled=false;button.textContent=t(editId?'저장하기':'등록하기');}});
 function renderMeetings(){
  const formatter=new Intl.DateTimeFormat({ko:'ko-KR',en:'en-US',ja:'ja-JP',zh:'zh-CN'}[locale],{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Seoul'});
- const date=x=>esc(formatter.format(new Date(x.starts)))+' · KST (UTC+9)';
- $('#ul-meetings').innerHTML=meetings.length?meetings.map(x=>'<article class="ul-item ul-meeting"><span class="ul-tag">'+esc(x.language)+'</span><h3>'+esc(x.title)+'</h3><p class="ul-meta">'+date(x)+'</p>'+(x.link?'<a class="ul-kakao-link" href="'+esc(x.link)+'" target="_blank" rel="noopener noreferrer">'+t('참여하기')+'</a>':'<button type="button" disabled>'+t('참여 링크 준비 중')+'</button>')+'</article>').join(''):'<p class="ul-sub">'+t('등록된 미팅이 없습니다.')+'</p>';
+ const date=x=>Number.isFinite(new Date(x.starts).getTime())?esc(formatter.format(new Date(x.starts)))+' · KST (UTC+9)':t('일정 확인 필요');
+ const {upcoming,past}=groupMeetings(meetings);
+ const inquiry='<a class="ul-kakao-link" href="'+esc(inquiryUrl)+'" target="_blank" rel="noopener noreferrer">'+t('참여 방법 문의')+'</a>';
+ const card=(x,archived=false)=>'<article class="ul-item ul-meeting"><span class="ul-tag">'+esc(x.language)+'</span><h3>'+esc(x.title)+'</h3><p class="ul-meta">'+date(x)+'</p>'+(archived?'<p class="ul-meta">'+t('지난 일정')+'</p>':x.link?'<a class="ul-kakao-link" href="'+esc(x.link)+'" target="_blank" rel="noopener noreferrer">'+t('참여하기')+'</a>':'<p class="ul-meta">'+t('참여 링크를 준비하고 있습니다. 참여 방법은 카카오톡으로 문의해 주세요.')+'</p>'+inquiry)+'</article>';
+ $('#ul-meetings').innerHTML='<h3 class="ul-schedule-heading">'+t('오늘·예정 일정')+'</h3>'+(upcoming.length?upcoming.map(x=>card(x)).join(''):'<p class="ul-sub">'+t('예정된 일정이 없습니다. 새 설명회 일정은 카카오톡으로 문의해 주세요.')+'</p>'+inquiry)+(past.length?'<details class="ul-past-meetings"><summary>'+t('지난 일정 보기')+' ('+past.length+')</summary>'+past.map(x=>card(x,true)).join('')+'</details>':'');
  $('#ul-meeting-admin-list').innerHTML=auth.authenticated?meetings.map(x=>'<article class="ul-item"><h3>'+esc(x.title)+'</h3><div class="ul-meta">'+date(x)+'<br>'+esc(x.language)+'</div><button type="button" data-meeting-edit="'+esc(x.id)+'">'+t('수정하기')+'</button></article>').join(''):'';
  $('#ul-meeting-admin-nav').hidden=!auth.authenticated;
  $('#ul-meetings-nav').hidden=auth.authenticated;
@@ -258,7 +283,7 @@ async function loadExperiences(){
 function renderExperiences(){
  const available=auth.authenticated||experiences.some(x=>x.visibility==='public');
  $('#ul-cases-nav').hidden=!available;$('#ul-home-cases').hidden=!available;$('#ul-case-tools').hidden=!auth.authenticated;$('#ul-subtitle-import-label').hidden=!auth.authenticated||!backend;$('#ul-subtitle-catalog-label').hidden=!auth.authenticated||!backend;
- $('#ul-home-title').textContent=t(available?'사례·교육·설명회를 하나의 앱으로.':'교육·설명회를 하나의 앱으로.');
+ $('#ul-home-title').textContent=t('Olylife 비지니스를 하나의 앱으로.');
  root.querySelectorAll('.ul-app-nav button:not([hidden])').forEach(b=>b.style.flexBasis=available?'calc((100% - 24px)/4)':'calc((100% - 16px)/3)');
  const used=new Set(experiences.flatMap(x=>x.categories));const categories=[...new Set([...defaultExperienceCategories.filter(x=>used.has(x)||['치매','신장·방광','정력·성기능','여성 요실금'].includes(x)),...used])];
  $('#ul-experience-categories').innerHTML=[['','전체'],...categories.map(value=>[value,value])].map(([value,label])=>'<button type="button" data-case-category="'+esc(value)+'" aria-pressed="'+String(value===experienceCategory)+'">'+esc(t(label))+'</button>').join('');
