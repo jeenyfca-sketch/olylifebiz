@@ -16,6 +16,8 @@ const adminMode = new URLSearchParams(location.search).get('admin') === '1';
 const root=document.getElementById('ulilife-preview'), $=s=>root.querySelector(s);
 const inquiryUrl = $('.ul-direct-inquiry').href;
 const translations={
+ '안드로이드 앱 설치':['Install Android app','Androidアプリをインストール','安装安卓应用'],
+ '안드로이드 10 이상 · APK 파일 다운로드':['Android 10 or later · Download APK','Android 10以降 · APKをダウンロード','安卓10及以上 · 下载APK文件'],
  'QR 보기':['Show QR','QRを表示','显示二维码'],
  'QR 닫기':['Close QR','QRを閉じる','关闭二维码'],
  '카카오톡 문의 QR코드':['KakaoTalk contact QR code','カカオトークお問い合わせ用QRコード','KakaoTalk咨询二维码'],
