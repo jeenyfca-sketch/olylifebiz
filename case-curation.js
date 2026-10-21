@@ -1,5 +1,22 @@
 // Editorial selection is scoped to each topic; original cases stay unchanged.
 export const caseCuration = {
+  '류마티스': {
+    representatives: ['OLY-406','OLY-411','OLY-410','OLY-408','OLY-407'],
+    retained: [],
+    excerpts: {
+      'OLY-406': {start:15,end:140},
+      'OLY-411': {start:16,end:184},
+      'OLY-410': {start:1,end:171},
+      'OLY-408': {start:1477,end:1567},
+      'OLY-407': {start:565,end:676}
+    },
+    candidates: {
+      'OLY-312':'목의 퇴행성관절염·수면 이야기가 중심이고 류마티스는 본인의 초기 의심 표현입니다. 켄의 발표는 대표 자료와 중복됩니다.',
+      'OLY-390':'류마티스 관련 내용은 지인의 짧은 전언이며 여러 사람의 이야기가 섞여 있습니다.',
+      'OLY-398':'여러 질환의 포괄적인 회복 주장으로 류마티스의 구체적인 사용 전후 변화를 분리하기 어렵습니다.',
+      'OLY-409':'피부·형제의 경험이 큰 비중을 차지하고 관절염 경과는 병원 약물치료와 함께 설명돼 짧은 대표 이야기로 전달하기 어렵습니다.'
+    }
+  },
   '허리·등': {
     representatives: ['OLY-205','OLY-057','OLY-274','OLY-201','OLY-215','OLY-230','OLY-226','OLY-225','OLY-195','OLY-067'],
     retained: ['OLY-138','OLY-217','OLY-228'],
@@ -79,7 +96,7 @@ export const caseCuration = {
 export function getCaseCuration(id, category) {
   const policy=caseCuration[category];if(!policy)return null;
   const rank=policy.representatives.indexOf(id);
-  if(rank>=0)return {state:'representative',rank:rank+1};
+  if(rank>=0)return {state:'representative',rank:rank+1,...(policy.excerpts?.[id]?{excerpt:{...policy.excerpts[id]}}:{})};
   if(policy.retained.includes(id))return {state:'retained',label:'등 자료'};
   return {state:'candidate',reason:policy.candidates[id]||'새 자료입니다. 대표 선정 검토가 필요합니다.'};
 }

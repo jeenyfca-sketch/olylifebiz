@@ -1,4 +1,4 @@
-import {validateSubtitle,isNativeSubtitle,embedSource,checkedMediaUrl,activeSubtitle,subtitleClock} from './subtitle-data.js?v=20261016-native-bitchute';
+import {validateSubtitle,selectSubtitleExcerpt,isNativeSubtitle,embedSource,checkedMediaUrl,activeSubtitle,subtitleClock} from './subtitle-data.js?v=20261021-excerpts';
 
 const loaders=new Map();
 function script(url,ready){
@@ -16,7 +16,7 @@ function script(url,ready){
 function node(tag,className,text){const result=document.createElement(tag);if(className)result.className=className;if(text!==undefined)result.textContent=text;return result;}
 
 export function mountSubtitlePlayer(container,input,options={}){
-  const data=validateSubtitle(input),isVisual=data.method==='source-reviewed-visual-summary',isCaptionTranslation=data.method==='source-visible-caption-translation',isTranslation=data.method==='source-segment-translation'||isCaptionTranslation,isSummary=data.method==='source-reviewed-summary'||isVisual;
+  const data=selectSubtitleExcerpt(input,options.excerpt),isVisual=data.method==='source-reviewed-visual-summary',isCaptionTranslation=data.method==='source-visible-caption-translation',isTranslation=data.method==='source-segment-translation'||isCaptionTranslation,isSummary=data.method==='source-reviewed-summary'||isVisual;
   if(!document.querySelector('link[data-oly-subtitle-style]')){const style=document.createElement('link');style.rel='stylesheet';style.href=new URL('./subtitle-player.css',import.meta.url).href;style.dataset.olySubtitleStyle='';document.head.append(style);}
   let disposed=false,adapter=null,poll=null,providerTimer=null,played=false,current=data.start,active=null;
   const wrapper=node('section','oly-subtitles');wrapper.setAttribute('aria-label','한국어 자막 영상');
@@ -32,7 +32,7 @@ export function mountSubtitlePlayer(container,input,options={}){
   const clock=node('output','os-clock',subtitleClock(data.start));clock.setAttribute('aria-label','영상 재생 시간');controls.append(label,clock);
   viewer.append(bar,frame,captions,controls);
   const status=node('p','os-status','영상을 불러오고 있습니다.');status.setAttribute('role','status');
-  const scope=node('p','os-scope',data.scope==='case-segment'?`해당 사례 구간 · ${subtitleClock(data.start)}–${subtitleClock(data.end)}`:'');scope.hidden=data.scope!=='case-segment';
+  const scope=node('p','os-scope',data.scope==='case-segment'?`${data.excerptOf?'대표 선정 구간':'해당 사례 구간'} · ${subtitleClock(data.start)}–${subtitleClock(data.end)}${data.excerptOf?' · '+subtitleClock(data.end-data.start):''}`:'');scope.hidden=data.scope!=='case-segment';
   const details=node('details','os-transcript'),summary=node('summary','',isSummary?'한국어 내용 정리 · 문장을 누르면 장면 이동':isTranslation?'한국어 구간 대본 · 문장을 누르면 장면 이동':'한국어 전체 대본 · 문장을 누르면 장면 이동'),list=node('ol');details.append(summary,list);
   const rows=new Map();
   for(const cue of data.cues){const li=node('li'),button=node('button'),time=node('time','',subtitleClock(cue.start)),text=node('span','',cue.ko.replaceAll('\n',' '));button.type='button';button.disabled=true;button.append(time,text);button.addEventListener('click',async()=>{if(!adapter||disposed)return;try{await adapter.seek(cue.start+.01);if(disposed)return;await adapter.play();}catch{message('영상 재생 버튼을 누른 뒤 다시 선택해주세요.',true);}});li.append(button);list.append(li);rows.set(cue.id,{li,button});}

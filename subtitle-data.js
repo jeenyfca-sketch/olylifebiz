@@ -19,6 +19,17 @@ export function validateSubtitle(input) {
   }
   return input;
 }
+export function selectSubtitleExcerpt(input, excerpt) {
+  const source=validateSubtitle(input);
+  if(!excerpt)return source;
+  const {start,end}=excerpt;
+  if(!Number.isFinite(start)||!Number.isFinite(end)||start<source.start||end>source.end||end<=start)throw new Error('Invalid excerpt bounds');
+  const cues=source.cues.filter(c=>c.end>start&&c.start<end).map(c=>({...c,start:Math.max(start,c.start),end:Math.min(end,c.end)}));
+  const ids=new Set(cues.map(c=>c.id));
+  return validateSubtitle({...source,start,end,scope:'case-segment',method:'source-segment-translation',coverage:'selected-source-cues',
+    excerptOf:{start:source.start,end:source.end,scope:source.scope,method:source.method},
+    cautions:(source.cautions||[]).filter(c=>c.cue===undefined||ids.has(c.cue)).map(c=>({...c})),cues});
+}
 export function embedSource(data,origin) {
   const raw=new URL(data.embedUrl);
   if(raw.protocol!=='https:'||raw.username||raw.password||raw.port)throw new Error('Invalid embed URL');
