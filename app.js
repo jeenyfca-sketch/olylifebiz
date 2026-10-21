@@ -8,7 +8,7 @@ function normalizeMeetingLink(raw) {
 }
 (async () => {
 const backend = await window.olyCloudReady;
-const {normalizeCases,importCaseRows} = await import(new URL('./case-catalog.js?v=categories5',document.baseURI));
+const {normalizeCases} = await import(new URL('./case-catalog.js?v=categories5',document.baseURI));
 const {caseCuration,getCaseCuration,curateCases,curationCounts} = await import(new URL('./case-curation.js?v=20261021-symptom-first-v2',document.baseURI));
 const {getMaterialVideos} = await import(new URL('./material-videos.js?v=1',document.baseURI));
 const {groupMeetings} = await import(new URL('./meeting-schedule.js?v=1',document.baseURI));
@@ -280,7 +280,7 @@ async function loadExperiences(){
 }
 function renderExperiences(){
  const available=auth.authenticated||experiences.some(x=>x.visibility==='public');
- $('#ul-cases-nav').hidden=!available;$('#ul-home-cases').hidden=!available;$('#ul-case-tools').hidden=!auth.authenticated;$('#ul-subtitle-import-label').hidden=!auth.authenticated||!backend;$('#ul-subtitle-catalog-label').hidden=!auth.authenticated||!backend;
+ $('#ul-cases-nav').hidden=!available;$('#ul-home-cases').hidden=!available;$('#ul-case-tools').hidden=!auth.authenticated;
  $('#ul-home-title').textContent=t('Olylife 비지니스를 하나의 앱으로.');
  root.querySelectorAll('.ul-app-nav button:not([hidden])').forEach(b=>b.style.flexBasis=available?'calc((100% - 24px)/4)':'calc((100% - 16px)/3)');
  const used=new Set(experiences.flatMap(x=>x.categories));const categories=[...new Set([...defaultExperienceCategories.filter(x=>used.has(x)||['치매','신장·방광','정력·성기능','여성 요실금'].includes(x)),...used])];
@@ -329,7 +329,6 @@ $('#ul-case-curation-view').addEventListener('change',e=>{caseCurationView=e.tar
 function openCaseForm(item){if(!auth.authenticated)return;caseEditId=item?.id??null;const form=$('#ul-case-form');form.reset();if(item)for(const key of ['title','summary','country','language','url','video_url','media_type','review_status','visibility'])form.elements.namedItem(key).value=item[key];form.elements.categories.value=item?.categories.join(', ')??'';if(!item){form.elements.visibility.value='admin';form.elements.media_type.value='document';}form.hidden=false;form.scrollIntoView({block:'start',behavior:'smooth'});}
 $('#ul-case-new').addEventListener('click',()=>openCaseForm());
 $('#ul-case-cancel').addEventListener('click',()=>{$('#ul-case-form').hidden=true;caseEditId=null;});
-$('#ul-case-import').addEventListener('change',async e=>{const file=e.target.files[0];if(!file||!auth.authenticated)return;e.target.disabled=true;const notice=$('#ul-case-notice');try{if(file.size>10*1024*1024)throw new Error('JSON 최대 10MB');const rows=importCaseRows(JSON.parse(await file.text()));const result=await api('/api/experiences/import',{records:rows});await refresh();notice.textContent='비공개로 '+result.imported+'건 추가 · 기존 '+result.skipped+'건 유지';}catch(error){notice.textContent=error.message;}finally{e.target.value='';e.target.disabled=false;}});
 $('#ul-case-form').addEventListener('submit',async e=>{e.preventDefault();if(!auth.authenticated)return;const form=e.target,button=form.querySelector('[type="submit"]'),notice=$('#ul-case-notice');button.disabled=true;try{const input={id:caseEditId??crypto.randomUUID()};for(const key of ['title','summary','country','language','url','video_url','media_type','review_status','visibility'])input[key]=form.elements.namedItem(key).value;input.categories=form.elements.categories.value.split(/[,，]/).map(x=>x.trim()).filter(Boolean);await api('/api/experiences/admin',input);await refresh();notice.textContent=input.visibility==='public'?'공개로 저장했습니다.':'관리자 전용으로 저장했습니다.';}catch(error){notice.textContent=error.message;}finally{button.disabled=false;}});
 root.addEventListener('click',e=>{const button=e.target.closest('[data-case-edit]');if(button&&auth.authenticated)openCaseForm(experiences.find(x=>x.id===button.dataset.caseEdit));});
 root.addEventListener('click',async e=>{const category=e.target.closest('[data-case-category]');if(category){experienceCategory=category.dataset.caseCategory;caseCurationView='representative';renderExperiences();return;}const button=e.target.closest('[data-copy-experience]');if(!button)return;const item=experiences.find(x=>x.id===button.dataset.copyExperience);if(!item)return;try{await navigator.clipboard.writeText(item.url);button.textContent=t('링크를 복사했습니다.');}catch{button.textContent=item.url;}});
@@ -352,19 +351,6 @@ async function openSubtitles(id,button){
  catch(error){if(request===subtitleRequest){content.textContent=error.message;if(error.status===401){clearCases();auth.authenticated=false;applyLocale();show('auth');}}}
 }
 root.addEventListener('click',event=>{const button=event.target.closest('[data-case-subtitle]');if(button&&auth.authenticated)openSubtitles(button.dataset.caseSubtitle,button);});
-$('#ul-subtitle-catalog-import').addEventListener('change',async event=>{
- const input=event.target,file=input.files?.[0],notice=$('#ul-subtitle-import-notice');if(!file||!auth.authenticated||!backend)return;
- const generation=authRequest;input.disabled=true;
- try{if(file.size>4*1024*1024)throw new Error('자막 자료는 4MB 이하 JSON 파일을 선택하세요.');const bundle=JSON.parse(await file.text());if(bundle.type!=='oly-private-subtitle-bundle'||!Array.isArray(bundle.records))throw new Error('올리링크 자막 자료 파일을 선택하세요.');if(generation!==authRequest||!auth.authenticated)return;
-  const result=await api('/api/subtitles/catalog/import',{records:bundle.records});if(generation!==authRequest||!auth.authenticated)return;experiencesLoaded=false;await loadExperiences();if(generation===authRequest&&auth.authenticated)notice.textContent='자막 '+result.subtitles+'개 등록 · 새 사례 '+result.imported+'개 · 영상 파일도 등록해주세요.';
- }catch(error){if(generation===authRequest&&auth.authenticated)notice.textContent=error.message;}finally{input.value='';input.disabled=false;}
-});
-$('#ul-subtitle-media-import').addEventListener('change',async event=>{
- const input=event.target,files=Array.from(input.files||[]),notice=$('#ul-subtitle-import-notice');if(!files.length||!auth.authenticated||!backend)return;
- const generation=authRequest;input.disabled=true;
- try{const result=await api('/api/subtitles/media/import',{files,onProgress:progress=>{if(generation===authRequest&&auth.authenticated)notice.textContent='영상 등록 '+(progress.uploaded+progress.skipped)+' / '+progress.total;}});if(generation===authRequest&&auth.authenticated)notice.textContent='완료: '+result.uploaded+'개 등록 · 기존 '+result.skipped+'개 유지';}
- catch(error){if(generation===authRequest&&auth.authenticated)notice.textContent=error.message;}finally{input.value='';input.disabled=false;}
-});
 
 if(backend&&['127.0.0.1','localhost'].includes(location.hostname)){
  const button=document.createElement('button'),notice=document.createElement('p');
