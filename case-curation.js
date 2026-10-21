@@ -12,7 +12,7 @@ export const caseCuration = {
     "excerpts": {
       "OLY-312": {
         "start": 672.32,
-        "end": 766.47
+        "end": 756.87
       },
       "OLY-369": {
         "start": 707,
@@ -58,7 +58,7 @@ export const caseCuration = {
     "excerpts": {
       "OLY-312": {
         "start": 672.32,
-        "end": 766.47
+        "end": 756.87
       },
       "OLY-198": {
         "start": 2365,
