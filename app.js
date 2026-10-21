@@ -9,7 +9,7 @@ function normalizeMeetingLink(raw) {
 (async () => {
 const backend = await window.olyCloudReady;
 const {normalizeCases,importCaseRows} = await import(new URL('./case-catalog.js?v=categories5',document.baseURI));
-const {getCaseCuration,curateCases,curationCounts} = await import(new URL('./case-curation.js?v=20261021-all-topics',document.baseURI));
+const {caseCuration,getCaseCuration,curateCases,curationCounts} = await import(new URL('./case-curation.js?v=20261021-symptom-first',document.baseURI));
 const {getMaterialVideos} = await import(new URL('./material-videos.js?v=1',document.baseURI));
 const {groupMeetings} = await import(new URL('./meeting-schedule.js?v=1',document.baseURI));
 const adminMode = new URLSearchParams(location.search).get('admin') === '1';
@@ -191,11 +191,7 @@ const knownLocales=['ko','en','ja','zh'];
 let locale='ko';try { const saved=localStorage.getItem('olylife_locale');if(knownLocales.includes(saved))locale=saved; } catch {}
 let experiences=[],experiencesLoaded=false,experiencesLoading=false,experiencesFailed=false,experienceCategory='',caseEditId=null,caseRequest=0;
 let caseCurationView='representative';
-const defaultExperienceCategories=[
- '뇌·두통','치매','눈·시야','얼굴·귀·코·턱','어깨·목','손·팔','허리·등','고관절','다리','무릎','다리·무릎',
- '기억·인지','파킨슨 관련','신경·저림·경련','수면','기분·활력','온감·냉감','순환·붓기',
- '혈압·혈당·대사','소화·배변','신장·방광','비뇨·야간뇨','정력·성기능','여성 요실금','피부','다이어트','운동·회복','연전현상 이완','사용감·불편'
-];
+const defaultExperienceCategories=Object.keys(caseCuration);
 let materials=[],meetings=[],auth={initialized:!!backend,authenticated:false,signedIn:false},section='home',editId=null,meetingEditId=null,detailId=null,authRequest=0;
 let preparedPublishController=null;
 const textNodes=[],attrs=[];
@@ -312,6 +308,12 @@ function showCurationLabels(list) {
   const label=selected.state==='representative'?'대표 '+selected.rank+(selected.label?' · '+selected.label:''):selected.state==='retained'?'등 자료':'후보 자료';
   const badge=document.createElement('span');badge.className='ul-tag';badge.textContent=label;
   article.querySelector('h3').before(badge);
+  if(selected.excerpt){
+   const clock=value=>{const seconds=Math.floor(value);return String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');};
+   const range=document.createElement('p');range.className='ul-sub';
+   range.textContent='이 분류의 선정 구간: '+clock(selected.excerpt.start)+'–'+clock(selected.excerpt.end)+' · 한국어 자막영상에서 해당 구간의 대본을 확인할 수 있습니다.';
+   article.querySelector('h3').after(range);
+  }
   if(auth.authenticated&&selected.state==='candidate'){
    const reason=document.createElement('p');reason.className='ul-sub';reason.textContent='후보 보관 이유: '+selected.reason;
    article.querySelector('h3').after(reason);
