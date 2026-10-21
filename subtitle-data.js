@@ -19,6 +19,24 @@ export function validateSubtitle(input) {
   }
   return input;
 }
+export function sourceWatchUrl(raw, start) {
+  const original=typeof raw==='string'?raw:'';
+  let url;try{url=new URL(original);}catch{return '';}
+  if(url.protocol!=='https:'||url.username||url.password)return '';
+  if(!Number.isFinite(start)||start<0||url.port)return original;
+  const id=/^[a-zA-Z0-9_-]{11}$/;
+  const youtube=['www.youtube.com','youtube.com','m.youtube.com'].includes(url.hostname)&&
+    ((url.pathname==='/watch'&&id.test(url.searchParams.get('v')||''))||/^\/(?:shorts|live)\/[a-zA-Z0-9_-]{11}\/?$/.test(url.pathname));
+  const short=url.hostname==='youtu.be'&&/^\/[a-zA-Z0-9_-]{11}\/?$/.test(url.pathname);
+  if(youtube||short){
+    url.searchParams.delete('start');url.searchParams.delete('time_continue');
+    url.searchParams.set('t',Math.floor(start)+'s');url.hash='';return url.href;
+  }
+  if(['vimeo.com','www.vimeo.com'].includes(url.hostname)&&/^\/\d{5,12}(?:\/[a-zA-Z0-9]{5,24})?\/?$/.test(url.pathname)){
+    url.hash='t='+Math.floor(start)+'s';return url.href;
+  }
+  return original;
+}
 export function selectSubtitleExcerpt(input, excerpt) {
   const source=validateSubtitle(input);
   if(!excerpt)return source;

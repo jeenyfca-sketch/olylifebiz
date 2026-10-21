@@ -1,4 +1,4 @@
-import {validateSubtitle,selectSubtitleExcerpt,isNativeSubtitle,embedSource,checkedMediaUrl,activeSubtitle,subtitleClock} from './subtitle-data.js?v=20261021-all-topics';
+import {validateSubtitle,selectSubtitleExcerpt,isNativeSubtitle,embedSource,checkedMediaUrl,activeSubtitle,subtitleClock,sourceWatchUrl} from './subtitle-data.js?v=20261022-source-start';
 
 const loaders=new Map();
 function script(url,ready){
@@ -38,7 +38,7 @@ export function mountSubtitlePlayer(container,input,options={}){
   const rows=new Map();
   for(const cue of data.cues){const li=node('li'),button=node('button'),time=node('time','',subtitleClock(cue.start)),text=node('span','',cue.ko.replaceAll('\n',' '));button.type='button';button.disabled=true;button.append(time,text);button.addEventListener('click',async()=>{if(!adapter||disposed)return;try{await adapter.seek(cue.start+.01);if(disposed)return;await adapter.play();}catch{message('영상 재생 버튼을 누른 뒤 다시 선택해주세요.',true);}});li.append(button);list.append(li);rows.set(cue.id,{li,button});}
   const note=node('p','os-note',isCaptionTranslation?'영상에 이미 표시된 원문 화면 자막의 선택 구간을 한국어로 옮겼습니다. 장면을 초 단위로 대조한 번역 초안이며, 원음 전체 청취 검수나 영상 전체의 완역은 아닙니다.':isVisual?'영상의 화면 문구를 번역하고 확인한 장면을 한국어로 설명한 자료입니다. 음성 번역이 아니며, 전후 표시나 동작만으로 제품 효과를 검증한 것은 아닙니다.':isSummary?'원문 발언의 선택 구간을 정리한 한국어 요약 자막입니다. 발언 전체의 직역은 아니며, 체험자의 주장이나 신원을 독립 검증한 자료가 아닙니다.':isTranslation?'표시된 선택 구간의 음성전사에 기반한 한국어 번역 초안입니다. 원문 인식이 불명확한 부분은 별도 표시했습니다. 영상 전체의 번역이나 발언 내용의 독립 검증은 아닙니다.':data.method==='provided-korean-caption-edited'?'제공된 한국어 자동자막을 다듬었습니다.':'원문 자막·음성전사에 기반한 번역입니다. 영상 속 개인의 발언을 옮겼으며 내용의 독립 검증은 아닙니다.');
-  const sourceLink=node('a','os-source','원본 영상 보기 ↗');sourceLink.href=data.watchUrl;sourceLink.target='_blank';sourceLink.rel='noopener noreferrer';
+  const sourceLink=node('a','os-source','원본 영상 보기 ↗');sourceLink.href=sourceWatchUrl(data.watchUrl,data.start);sourceLink.target='_blank';sourceLink.rel='noopener noreferrer';
   wrapper.append(heading,viewer,status,scope,details,sourceLink,note);container.replaceChildren(wrapper);
   function message(text,error=false){if(disposed)return;status.textContent=text;status.dataset.error=String(error);}
   function expanded(value){viewer.classList.toggle('os-expanded',value);expand.textContent=value?'작게 보기':'크게 보기';expand.setAttribute('aria-expanded',String(value));}
