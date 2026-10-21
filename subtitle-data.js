@@ -26,7 +26,8 @@ export function selectSubtitleExcerpt(input, excerpt) {
   if(!Number.isFinite(start)||!Number.isFinite(end)||start<source.start||end>source.end||end<=start)throw new Error('Invalid excerpt bounds');
   const cues=source.cues.filter(c=>c.end>start&&c.start<end).map(c=>({...c,start:Math.max(start,c.start),end:Math.min(end,c.end)}));
   const ids=new Set(cues.map(c=>c.id));
-  return validateSubtitle({...source,start,end,scope:'case-segment',method:'source-segment-translation',coverage:'selected-source-cues',
+  const method=['source-reviewed-visual-summary','source-visible-caption-translation','source-reviewed-summary','provided-korean-caption-edited'].includes(source.method)?source.method:'source-segment-translation';
+  return validateSubtitle({...source,start,end,scope:'case-segment',method,coverage:'selected-source-cues',
     excerptOf:{start:source.start,end:source.end,scope:source.scope,method:source.method},
     cautions:(source.cautions||[]).filter(c=>c.cue===undefined||ids.has(c.cue)).map(c=>({...c})),cues});
 }
