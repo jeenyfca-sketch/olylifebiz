@@ -329,9 +329,18 @@ $('#ul-experience-language').addEventListener('change',renderExperiences);
 $('#ul-case-media').addEventListener('change',renderExperiences);
 $('#ul-case-visibility').addEventListener('change',renderExperiences);
 $('#ul-case-curation-view').addEventListener('change',e=>{caseCurationView=e.target.value;renderExperiences();});
-function openCaseForm(item){if(!auth.authenticated)return;caseEditId=item?.id??null;const form=$('#ul-case-form');form.reset();if(item)for(const key of ['title','summary','country','language','url','video_url','media_type','review_status','visibility'])form.elements.namedItem(key).value=item[key];form.elements.categories.value=item?.categories.join(', ')??'';if(!item){form.elements.visibility.value='admin';form.elements.media_type.value='document';}form.hidden=false;form.scrollIntoView({block:'start',behavior:'smooth'});}
+function openCaseForm(item){if(!auth.authenticated)return;caseEditId=item?.id??null;const form=$('#ul-case-form');form.reset();if(item)for(const key of ['title','summary','country','language','url','video_url','media_type','review_status','visibility'])form.elements.namedItem(key).value=item[key];form.elements.categories.value=item?.categories.join(', ')??'';if(!item){form.elements.visibility.value='admin';form.elements.media_type.value='document';}$('#ul-case-playback-files').hidden=!backend||!/^OLY-\d{3}$/.test(caseEditId||'');$('#ul-case-playback-files').open=false;$('#ul-case-playback-notice').textContent='';form.hidden=false;form.scrollIntoView({block:'start',behavior:'smooth'});}
 $('#ul-case-new').addEventListener('click',()=>openCaseForm());
 $('#ul-case-cancel').addEventListener('click',()=>{$('#ul-case-form').hidden=true;caseEditId=null;});
+$('#ul-case-playback-upload').addEventListener('click',async()=>{
+ if(!auth.authenticated||!backend||!/^OLY-\d{3}$/.test(caseEditId||''))return;
+ const id=caseEditId,file=$('#ul-case-playback-file').files[0],button=$('#ul-case-playback-upload'),notice=$('#ul-case-playback-notice');
+ if(!file){notice.textContent='MP4 영상 파일을 선택해주세요.';return;}
+ if(!/\.mp4$/i.test(file.name)||!file.size||file.size>50*1024*1024){notice.textContent='50MB 이하 MP4 영상을 선택해주세요.';return;}
+ button.disabled=true;notice.textContent='비공개 재생 파일을 등록하고 있습니다…';
+ try{await api('/api/subtitles/media/import',{files:[new File([file],id+'.mp4',{type:'video/mp4'})]});notice.textContent='비공개 재생 파일을 연결했습니다. 창을 닫고 한국어 자막영상을 열어주세요.';}
+ catch(error){notice.textContent=error.message;}finally{button.disabled=false;}
+});
 $('#ul-case-form').addEventListener('submit',async e=>{e.preventDefault();if(!auth.authenticated)return;const form=e.target,button=form.querySelector('[type="submit"]'),notice=$('#ul-case-notice');button.disabled=true;try{const input={id:caseEditId??crypto.randomUUID()};for(const key of ['title','summary','country','language','url','video_url','media_type','review_status','visibility'])input[key]=form.elements.namedItem(key).value;input.categories=form.elements.categories.value.split(/[,，]/).map(x=>x.trim()).filter(Boolean);await api('/api/experiences/admin',input);await refresh();notice.textContent=input.visibility==='public'?'공개로 저장했습니다.':'관리자 전용으로 저장했습니다.';}catch(error){notice.textContent=error.message;}finally{button.disabled=false;}});
 root.addEventListener('click',e=>{const button=e.target.closest('[data-case-edit]');if(button&&auth.authenticated)openCaseForm(experiences.find(x=>x.id===button.dataset.caseEdit));});
 root.addEventListener('click',async e=>{const category=e.target.closest('[data-case-category]');if(category){experienceCategory=category.dataset.caseCategory;caseCurationView='representative';renderExperiences();return;}const button=e.target.closest('[data-copy-experience]');if(!button)return;const item=experiences.find(x=>x.id===button.dataset.copyExperience);if(!item)return;const selected=getCaseCuration(item.id,experienceCategory),source=sourceWatchUrl(item.url,selected?.excerpt?.start);try{await navigator.clipboard.writeText(source);button.textContent=t('링크를 복사했습니다.');}catch{button.textContent=source;}});
@@ -350,7 +359,7 @@ async function openSubtitles(id,button){
  const close=document.createElement('button');close.type='button';close.textContent='닫기';close.className='os-close';
  const content=document.createElement('div');content.textContent='한국어 자막을 불러오고 있습니다.';dialog.append(close,content);document.body.append(dialog);subtitleDialog=dialog;dialog.showModal();close.focus();
  close.addEventListener('click',closeSubtitles);dialog.addEventListener('cancel',event=>{event.preventDefault();closeSubtitles();});
- try{const [data,module]=await Promise.all([api('/api/experiences/'+id+'/subtitles'),import(new URL('./subtitle-player.js?v=20261022-youtube-reconnect',document.baseURI))]);if(request!==subtitleRequest||!auth.authenticated)return;subtitlePlayer=module.mountSubtitlePlayer(content,data,{mediaUrl:data.mediaUrl,excerpt,selectionLabel:selection?.label});}
+ try{const [data,module]=await Promise.all([api('/api/experiences/'+id+'/subtitles'),import(new URL('./subtitle-player.js?v=20261022-private-media',document.baseURI))]);if(request!==subtitleRequest||!auth.authenticated)return;subtitlePlayer=module.mountSubtitlePlayer(content,data,{mediaUrl:data.mediaUrl,excerpt,selectionLabel:selection?.label});}
  catch(error){if(request===subtitleRequest){content.textContent=error.message;if(error.status===401){clearCases();auth.authenticated=false;applyLocale();show('auth');}}}
 }
 root.addEventListener('click',event=>{const button=event.target.closest('[data-case-subtitle]');if(button&&auth.authenticated)openSubtitles(button.dataset.caseSubtitle,button);});

@@ -87,6 +87,13 @@
      <label>확인 상태<textarea name="review_status" rows="2" maxlength="2000"></textarea></label>
      <label>공개 범위<select name="visibility"><option value="admin">비공개 · 관리자만</option><option value="public">공개 · 누구나</option></select></label>
      <p class="ul-sub">공개로 저장하면 요약과 원문 링크가 일반 이용자에게 표시됩니다.</p>
+     <details id="ul-case-playback-files" hidden>
+       <summary>앱 재생 파일 관리</summary>
+       <label>비공개 재생 영상<input id="ul-case-playback-file" type="file" accept="video/mp4,.mp4"></label>
+       <p class="ul-sub">기존 자막이 있는 사례에 MP4 영상을 연결합니다. 원본 링크와 자막은 보존하며 관리자만 재생할 수 있습니다. 최대 50MB.</p>
+       <button id="ul-case-playback-upload" type="button">비공개 재생 파일 연결</button>
+       <p id="ul-case-playback-notice" role="status"></p>
+     </details>
      <button type="submit">사례 저장</button><button id="ul-case-cancel" type="button">닫기</button>
    </form>
    <p id="ul-case-notice" role="status"></p>
@@ -256,4 +263,4 @@
 #ulilife-preview .ul-material-video .ul-meta {font-size:11px}
 </style>
 
-<script src="./cloud.js?v=59339a0f5740"></script><script src="./app.js?v=d9db3d9ef27d"></script></body></html>
+<script src="./cloud.js?v=3c54a0c58321"></script><script src="./app.js?v=536d54c733f3"></script></body></html>

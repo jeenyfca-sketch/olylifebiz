@@ -59,13 +59,16 @@ export function mountSubtitlePlayer(container,input,options={}){
   function error(text){if(disposed)return;clearTimeout(providerTimer);wrapper.dataset.playbackState='error';message(text,true);details.open=true;options.onError?.({caseId:data.caseId,message:text});}
   const promise=(async()=>{
     try{
-      if(isNativeSubtitle(data)){
+      if(isNativeSubtitle(data)||options.mediaUrl||data.mediaUrl){
+        wrapper.dataset.playbackKind='private-media';
         const video=node('video');video.controls=true;video.playsInline=true;video.preload='metadata';video.setAttribute('controlslist','nofullscreen noremoteplayback');video.disablePictureInPicture=true;
         video.src=checkedMediaUrl(options.mediaUrl||data.mediaUrl,data.caseId,location.origin);frame.append(video);
         adapter={seek:async seconds=>{video.currentTime=seconds;},play:()=>video.play(),pause:()=>video.pause(),destroy:()=>{video.pause();video.removeAttribute('src');video.load();}};
         video.addEventListener('loadedmetadata',()=>{if(disposed)return;video.currentTime=Math.min(data.start,video.duration);ready();});
         video.addEventListener('timeupdate',()=>render(video.currentTime));video.addEventListener('seeking',()=>render(video.currentTime));
-        video.addEventListener('play',()=>{played=true;});video.addEventListener('error',()=>error('영상을 불러오지 못했습니다. 잠시 후 다시 열어주세요.'));
+        video.addEventListener('play',()=>{if(disposed)return;played=true;wrapper.dataset.playbackState='playing';message('영상이 재생 중입니다. 영상 아래에서 한국어 자막을 확인하세요.');});
+        video.addEventListener('pause',()=>{if(!disposed&&played)wrapper.dataset.playbackState='paused';});video.addEventListener('ended',()=>{if(!disposed)wrapper.dataset.playbackState='ended';});
+        video.addEventListener('error',()=>error('영상을 불러오지 못했습니다. 잠시 후 다시 열어주세요.'));
         return;
       }
       if(data.platform==='Vimeo'){
