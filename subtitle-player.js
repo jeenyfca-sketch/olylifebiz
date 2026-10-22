@@ -80,11 +80,24 @@ export function mountSubtitlePlayer(container,input,options={}){
         // Let the provider construct its own frame and handshake metadata.
         // Exact clip bounds are cued only after onReady, never in the initial URL.
         await script('https://www.youtube.com/iframe_api',()=>!!window.YT?.Player);if(disposed)return;
-        const slot=node('div');frame.append(slot);
-        providerTimer=setTimeout(()=>error('유튜브 연결에 응답이 없습니다. 잠시 후 자막영상을 다시 열어주세요.'),30000);
-        const player=new window.YT.Player(slot,{host:source.origin,videoId:source.pathname.split('/').pop(),width:'100%',height:'100%',playerVars:{origin:location.origin,playsinline:1,rel:0},events:{onReady:()=>{if(disposed)return;player.cueVideoById({videoId:source.pathname.split('/').pop(),startSeconds:data.start,endSeconds:data.end});ready();poll=setInterval(()=>{if(!disposed&&typeof player.getCurrentTime==='function'){const seconds=player.getCurrentTime();render(played?seconds:Math.max(data.start,seconds));}},250);},onStateChange:event=>{if(disposed)return;if(event.data===1){played=true;wrapper.dataset.playbackState='playing';message('영상이 재생 중입니다. 영상 아래에서 한국어 자막을 확인하세요.');}else if(event.data===2)wrapper.dataset.playbackState='paused';else if(event.data===0)wrapper.dataset.playbackState='ended';},onError:event=>error('유튜브에서 재생을 허용하지 않았습니다 ('+event.data+'). 원본 링크와 대본을 확인해주세요.')}});
-        const iframe=player.getIframe();iframe.title=data.title+' 원본 영상';iframe.allow='autoplay; encrypted-media; picture-in-picture';iframe.referrerPolicy='strict-origin-when-cross-origin';iframe.style.minHeight='200px';
-        adapter={seek:async seconds=>{player.seekTo(seconds,true);},play:async()=>{player.playVideo();},pause:()=>player.pauseVideo?.(),destroy:()=>player.destroy()};
+        const hosts=[source.origin,'https://www.youtube.com'];let attempt=0;
+        function connect(index){
+          const active=++attempt,host=hosts[index];wrapper.dataset.playbackHost=host;
+          const slot=node('div');frame.replaceChildren(slot);
+          providerTimer=setTimeout(()=>{
+            if(disposed||active!==attempt)return;
+            if(index===0){++attempt;try{adapter?.destroy();}catch{}message('영상에 다시 연결하고 있습니다.');connect(1);}
+            else error('유튜브 연결에 응답이 없습니다. 잠시 후 자막영상을 다시 열어주세요.');
+          },index===0?8000:20000);
+          const player=new window.YT.Player(slot,{host,videoId:source.pathname.split('/').pop(),width:'100%',height:'100%',playerVars:{origin:location.origin,playsinline:1,rel:0},events:{
+            onReady:()=>{if(disposed||active!==attempt)return;player.cueVideoById({videoId:source.pathname.split('/').pop(),startSeconds:data.start,endSeconds:data.end});ready();poll=setInterval(()=>{if(!disposed&&active===attempt&&typeof player.getCurrentTime==='function'){const seconds=player.getCurrentTime();render(played?seconds:Math.max(data.start,seconds));}},250);},
+            onStateChange:event=>{if(disposed||active!==attempt)return;if(event.data===1){played=true;wrapper.dataset.playbackState='playing';message('영상이 재생 중입니다. 영상 아래에서 한국어 자막을 확인하세요.');}else if(event.data===2)wrapper.dataset.playbackState='paused';else if(event.data===0)wrapper.dataset.playbackState='ended';},
+            onError:event=>{if(!disposed&&active===attempt)error('유튜브에서 재생을 허용하지 않았습니다 ('+event.data+'). 원본 링크와 대본을 확인해주세요.');}
+          }});
+          const iframe=player.getIframe();iframe.title=data.title+' 원본 영상';iframe.allow='autoplay; encrypted-media; picture-in-picture';iframe.referrerPolicy='strict-origin-when-cross-origin';iframe.style.minHeight='200px';
+          adapter={seek:async seconds=>{player.seekTo(seconds,true);},play:async()=>{player.playVideo();},pause:()=>player.pauseVideo?.(),destroy:()=>player.destroy()};
+        }
+        connect(0);
       }
     }catch{if(!disposed)error('영상 연결을 확인하지 못했습니다. 원본 링크와 전체 대본을 이용해주세요.');}
   })();
