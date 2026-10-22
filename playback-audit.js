@@ -1,4 +1,4 @@
-import {mountSubtitlePlayer} from './subtitle-player.js?v=20261022-click-connect-v2';
+import {mountSubtitlePlayer} from './subtitle-player.js?v=20261022-direct-open-v1';
 export function installPlaybackAudit(container,{api,getCases,isAdmin}){
  const box=document.createElement('section');box.id='oly-playback-audit';
  box.innerHTML='<h3>유튜브 재생 점검</h3><p>각 영상의 불러오기 버튼을 눌러주세요. 실제 재생 시간과 한국어 자막, 장면 이동을 확인합니다. 검사 중에는 소리가 꺼집니다.</p><label>사례 ID (비우면 전체)<input id="oly-audit-ids" placeholder="OLY-067"></label><button id="oly-audit-start">점검 시작</button><button id="oly-audit-stop" disabled>중지</button><button id="oly-audit-save" disabled>결과 저장</button><p id="oly-audit-status" role="status">준비</p><div id="oly-audit-player"></div><pre id="oly-audit-results" style="white-space:pre-wrap;font-size:12px"></pre>';

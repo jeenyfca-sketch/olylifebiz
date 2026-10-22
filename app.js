@@ -11,6 +11,7 @@ const backend = await window.olyCloudReady;
 const {normalizeCases} = await import(new URL('./case-catalog.js?v=categories5',document.baseURI));
 const {caseCuration,getCaseCuration,curateCases,curationCounts} = await import(new URL('./case-curation.js?v=20261022-topic-adjustment',document.baseURI));
 const {sourceWatchUrl} = await import(new URL('./subtitle-data.js?v=20261022-source-start',document.baseURI));
+const subtitleModule = await import(new URL('./subtitle-player.js?v=20261022-direct-open-v1',document.baseURI));
 const {getMaterialVideos} = await import(new URL('./material-videos.js?v=1',document.baseURI));
 const {groupMeetings} = await import(new URL('./meeting-schedule.js?v=1',document.baseURI));
 const adminMode = new URLSearchParams(location.search).get('admin') === '1';
@@ -350,8 +351,8 @@ $('#ul-import-local').addEventListener('click',async()=>{
  catch(error){notice.textContent=error.message;}finally{button.disabled=false;}
 });
 
-let subtitlePlayer=null,subtitleRequest=0,subtitleDialog=null,subtitleFocus=null;
-function closeSubtitles(){++subtitleRequest;try{subtitlePlayer?.destroy();}catch{}subtitlePlayer=null;if(subtitleDialog){subtitleDialog.close();subtitleDialog.remove();subtitleDialog=null;}subtitleFocus?.focus();subtitleFocus=null;}
+let subtitlePlayer=null,subtitlePreparation=null,subtitleRequest=0,subtitleDialog=null,subtitleFocus=null;
+function closeSubtitles(){++subtitleRequest;try{subtitlePlayer?.destroy();subtitlePreparation?.destroy();}catch{}subtitlePlayer=null;subtitlePreparation=null;if(subtitleDialog){subtitleDialog.close();subtitleDialog.remove();subtitleDialog=null;}subtitleFocus?.focus();subtitleFocus=null;}
 async function openSubtitles(id,button){
  if(!auth.authenticated)return;closeSubtitles();const request=++subtitleRequest;subtitleFocus=button;
  const selection=getCaseCuration(id,experienceCategory),excerpt=selection?.excerpt;
@@ -359,13 +360,14 @@ async function openSubtitles(id,button){
  const close=document.createElement('button');close.type='button';close.textContent='닫기';close.className='os-close';
  const content=document.createElement('div');content.textContent='한국어 자막을 불러오고 있습니다.';dialog.append(close,content);document.body.append(dialog);subtitleDialog=dialog;dialog.showModal();close.focus();
  close.addEventListener('click',closeSubtitles);dialog.addEventListener('cancel',event=>{event.preventDefault();closeSubtitles();});
- try{const [data,module]=await Promise.all([api('/api/experiences/'+id+'/subtitles'),import(new URL('./subtitle-player.js?v=20261022-click-connect-v2',document.baseURI))]);if(request!==subtitleRequest||!auth.authenticated)return;subtitlePlayer=module.mountSubtitlePlayer(content,data,{mediaUrl:data.mediaUrl,excerpt,selectionLabel:selection?.label});}
- catch(error){if(request===subtitleRequest){content.textContent=error.message;if(error.status===401){clearCases();auth.authenticated=false;applyLocale();show('auth');}}}
+ subtitlePreparation=subtitleModule.prepareSubtitlePlayer(content,experiences.find(row=>row.id===id)||{});
+ try{const data=await api('/api/experiences/'+id+'/subtitles');if(request!==subtitleRequest||!auth.authenticated)return;subtitlePlayer=subtitleModule.mountSubtitlePlayer(content,data,{prepared:subtitlePreparation,mediaUrl:data.mediaUrl,excerpt,selectionLabel:selection?.label});subtitlePreparation=null;}
+ catch(error){if(request===subtitleRequest){subtitlePreparation?.destroy();subtitlePreparation=null;content.textContent=error.message;if(error.status===401){clearCases();auth.authenticated=false;applyLocale();show('auth');}}}
 }
 root.addEventListener('click',event=>{const button=event.target.closest('[data-case-subtitle]');if(button&&auth.authenticated)openSubtitles(button.dataset.caseSubtitle,button);});
 
 if(adminMode&&new URLSearchParams(location.search).get('playback-audit')==='1'){
- const {installPlaybackAudit}=await import('./playback-audit.js?v=20261022-audit3');
+ const {installPlaybackAudit}=await import('./playback-audit.js?v=20261022-direct-open-v1');
  installPlaybackAudit($('#ul-experience-list').parentElement,{api,getCases:()=>experiences,isAdmin:()=>auth.authenticated});
 }
 
