@@ -365,7 +365,7 @@ async function openSubtitles(id,button){
 root.addEventListener('click',event=>{const button=event.target.closest('[data-case-subtitle]');if(button&&auth.authenticated)openSubtitles(button.dataset.caseSubtitle,button);});
 
 if(adminMode&&new URLSearchParams(location.search).get('playback-audit')==='1'){
- const {installPlaybackAudit}=await import('./playback-audit.js?v=20261022-audit1');
+ const {installPlaybackAudit}=await import('./playback-audit.js?v=20261022-audit2');
  installPlaybackAudit($('#ul-experience-list').parentElement,{api,getCases:()=>experiences,isAdmin:()=>auth.authenticated});
 }
 
