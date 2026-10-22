@@ -5,6 +5,7 @@
 .oly-subtitles .os-bar,.oly-subtitles .os-controls{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;background:#263e31;color:#fff;font-size:13px}
 .oly-subtitles .os-bar button{background:transparent;color:#fff;border:1px solid #a4baa6;border-radius:8px;font:inherit;padding:5px 12px;cursor:pointer;min-height:32px;width:auto}
 .oly-subtitles .os-frame{position:relative;aspect-ratio:16/9;min-height:200px;background:#000}
+.oly-subtitles .os-connect{position:absolute;inset:40% 10%;height:54px;margin:auto;border:1px solid #a4baa6;border-radius:10px;background:#263e31;color:white;font:700 16px system-ui;cursor:pointer}
 .oly-subtitles iframe,.oly-subtitles video{position:absolute;inset:0;width:100%;height:100%;border:0;object-fit:contain}
 .oly-subtitles .os-captions{padding:17px 15px;min-height:110px;text-align:center;border-top:1px solid #ffffff15;display:flex;flex-direction:column;justify-content:center}
 .oly-subtitles .os-ko{font-size:clamp(18px,2.7vw,24px);line-height:1.55;color:#fff;font-weight:700;white-space:pre-line;margin:0;word-break:keep-all}
