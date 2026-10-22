@@ -1003,16 +1003,6 @@ export const caseCuration = {
       "OLY-411": "원본과 전체 자막을 보관합니다. 직접 출연·본인 발언·분류 적합성·전후 맥락·중복을 비교해 다른 자료를 우선했습니다."
     }
   },
-  "심장 관련": {
-    "representatives": [],
-    "retained": [],
-    "excerpts": {},
-    "labels": {},
-    "candidates": {
-      "OLY-389": "원본과 전체 자막을 보관합니다. 직접 출연·본인 발언·분류 적합성·전후 맥락·중복을 비교해 다른 자료를 우선했습니다.",
-      "OLY-398": "원본과 전체 자막을 보관합니다. 직접 출연·본인 발언·분류 적합성·전후 맥락·중복을 비교해 다른 자료를 우선했습니다."
-    }
-  },
   "혈압·혈당·대사": {
     "representatives": [
       "OLY-127",
@@ -1243,10 +1233,19 @@ export const caseCuration = {
     }
   },
   "정력·성기능": {
-    "representatives": [],
+    "representatives": [
+      "OLY-420"
+    ],
     "retained": [],
-    "excerpts": {},
-    "labels": {},
+    "excerpts": {
+      "OLY-420": {
+        "start": 0,
+        "end": 44.3
+      }
+    },
+    "labels": {
+      "OLY-420": "본인 직접 체험 · 한국어 요약 · 짧은 구간"
+    },
     "candidates": {}
   },
   "여성 요실금": {
@@ -1620,7 +1619,7 @@ export const caseCuration = {
       "OLY-408": "원본과 전체 자막을 보관합니다. 직접 출연·본인 발언·분류 적합성·전후 맥락·중복을 비교해 다른 자료를 우선했습니다."
     }
   },
-  "연전현상 이완": {
+  "연전현상": {
     "representatives": [],
     "retained": [],
     "excerpts": {},

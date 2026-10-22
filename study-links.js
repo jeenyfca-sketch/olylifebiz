@@ -1,4 +1,4 @@
-import {validEntry,selectEntries,categoryCounts,shareUrl} from './study-links-core.js?v=1';
+import {validEntry,selectEntries,categoryCounts,shareUrl} from './study-links-core.js?v=2';
 const $=s=>document.querySelector(s);let entries=[],category='',query='',collection='',timer;
 const pool=()=>collection?entries.filter(x=>x.collection===collection):entries;
 let backend,loadVersion=0;
@@ -26,7 +26,7 @@ async function load(){const version=++loadVersion;clearPrivateContent();try{
  $('#study-logout').hidden=!status.signedIn;$('#auth-panel').hidden=status.signedIn;$('#study-denied').hidden=!status.signedIn||status.allowed;
  if(!status.allowed)return;
  const rows=await backend.list();if(version!==loadVersion)return;
- entries=[...new Map(rows.filter(validEntry).map(x=>[x.id,x])).values()];$('#checked').textContent=rows.map(x=>x.checkedDate).sort().at(-1)||'—';readLocation();render();$('#study-content').hidden=false;$('#share').hidden=false;$('#study-admin').hidden=!status.admin;if(status.admin)await renderMembers(version);
+ entries=[...new Map(rows.filter(validEntry).map(x=>[x.id,{...x,categories:x.categories.map(c=>c==='연전현상 이완'?'연전현상':c)}])).values()];$('#checked').textContent=rows.map(x=>x.checkedDate).sort().at(-1)||'—';readLocation();render();$('#study-content').hidden=false;$('#share').hidden=false;$('#study-admin').hidden=!status.admin;if(status.admin)await renderMembers(version);
  }catch{if(version!==loadVersion)return;clearPrivateContent();$('#auth-panel').hidden=false;$('#auth-message').textContent='접속 상태를 확인하지 못했습니다. 잠시 후 다시 로그인해주세요.';}}
 $('#study-login').onsubmit=async e=>{e.preventDefault();const button=e.target.querySelector('button');button.disabled=true;$('#auth-message').textContent='';try{backend??=await window.olyStudyReady;await backend.signIn(e.target.elements.email.value,e.target.elements.password.value);e.target.reset();await load();}catch{$('#auth-message').textContent='로그인하지 못했습니다. 계정과 비밀번호를 확인해주세요.';}finally{button.disabled=false}};
 $('#study-google').onclick=async()=>{const b=$('#study-google');b.disabled=true;try{backend??=await window.olyStudyReady;await backend.googleSignIn();}catch{$('#auth-message').textContent='Google 로그인을 시작하지 못했습니다. 다시 시도해주세요.';b.disabled=false}};

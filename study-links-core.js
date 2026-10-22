@@ -1,4 +1,4 @@
-export const CATEGORY_ORDER=['뇌·두통','치매','눈·시야','얼굴·귀·코·턱','어깨·목','손·팔','허리·등','고관절','다리','무릎','파킨슨 관련','수면','온감·냉감','순환·붓기','혈압·혈당·대사','소화·배변','신장·방광','비뇨·야간뇨','정력·성기능','여성 요실금','피부','다이어트','연전현상 이완','비즈니스 플랜'];
+export const CATEGORY_ORDER=['뇌·두통','치매','눈·시야','얼굴·귀·코·턱','어깨·목','손·팔','허리·등','고관절','다리','무릎','파킨슨 관련','수면','온감·냉감','순환·붓기','혈압·혈당·대사','소화·배변','신장·방광','비뇨·야간뇨','정력·성기능','여성 요실금','피부','다이어트','연전현상','비즈니스 플랜'];
 export function validEntry(x){
  if(!x||!/^[-\w]{11}$/.test(x.id)||typeof x.title!=='string'||!x.title.trim()||typeof x.channel!=='string'||!Array.isArray(x.categories)||!x.categories.length||!x.categories.every(c=>typeof c==='string'&&c.trim())||x.captionStatus!=='korean-translation-available')return false;
  try{const u=new URL(x.url);return u.protocol==='https:'&&u.hostname==='www.youtube.com'&&!u.username&&!u.password&&!u.port&&u.pathname==='/watch'&&u.searchParams.get('v')===x.id;}catch{return false;}
