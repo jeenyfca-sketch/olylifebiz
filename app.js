@@ -359,13 +359,13 @@ async function openSubtitles(id,button){
  const close=document.createElement('button');close.type='button';close.textContent='닫기';close.className='os-close';
  const content=document.createElement('div');content.textContent='한국어 자막을 불러오고 있습니다.';dialog.append(close,content);document.body.append(dialog);subtitleDialog=dialog;dialog.showModal();close.focus();
  close.addEventListener('click',closeSubtitles);dialog.addEventListener('cancel',event=>{event.preventDefault();closeSubtitles();});
- try{const [data,module]=await Promise.all([api('/api/experiences/'+id+'/subtitles'),import(new URL('./subtitle-player.js?v=20261022-click-connect-v1',document.baseURI))]);if(request!==subtitleRequest||!auth.authenticated)return;subtitlePlayer=module.mountSubtitlePlayer(content,data,{mediaUrl:data.mediaUrl,excerpt,selectionLabel:selection?.label});}
+ try{const [data,module]=await Promise.all([api('/api/experiences/'+id+'/subtitles'),import(new URL('./subtitle-player.js?v=20261022-click-connect-v2',document.baseURI))]);if(request!==subtitleRequest||!auth.authenticated)return;subtitlePlayer=module.mountSubtitlePlayer(content,data,{mediaUrl:data.mediaUrl,excerpt,selectionLabel:selection?.label});}
  catch(error){if(request===subtitleRequest){content.textContent=error.message;if(error.status===401){clearCases();auth.authenticated=false;applyLocale();show('auth');}}}
 }
 root.addEventListener('click',event=>{const button=event.target.closest('[data-case-subtitle]');if(button&&auth.authenticated)openSubtitles(button.dataset.caseSubtitle,button);});
 
 if(adminMode&&new URLSearchParams(location.search).get('playback-audit')==='1'){
- const {installPlaybackAudit}=await import('./playback-audit.js?v=20261022-audit2');
+ const {installPlaybackAudit}=await import('./playback-audit.js?v=20261022-audit3');
  installPlaybackAudit($('#ul-experience-list').parentElement,{api,getCases:()=>experiences,isAdmin:()=>auth.authenticated});
 }
 
