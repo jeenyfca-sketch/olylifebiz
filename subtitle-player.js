@@ -26,18 +26,20 @@ function youtubeFrame(frame,source,title){
 const preparations=new WeakSet();
 export function prepareSubtitlePlayer(container,record){
   let watch,id;try{watch=new URL(record.video_url);if(watch.protocol!=='https:'||watch.username||watch.password||watch.port)return null;if(['www.youtube.com','youtube.com','m.youtube.com'].includes(watch.hostname))id=watch.pathname==='/watch'?watch.searchParams.get('v'):watch.pathname.match(/^\/(?:shorts|live)\/([\w-]{11})\/?$/)?.[1];else if(watch.hostname==='youtu.be')id=watch.pathname.slice(1);}catch{return null;}
-  if(!/^OLY-\d{3}$/.test(record.id)||!/^[-\w]{11}$/.test(id||''))return null;
-  styles();const wrapper=node('section','oly-subtitles'),viewer=node('div','os-viewer'),frame=node('div','os-frame'),notice=node('p','os-status','한국어 자막을 불러오고 있습니다.');wrapper.setAttribute('aria-label','한국어 자막 영상');wrapper.dataset.playbackState='loading';notice.setAttribute('role','status');frame.style.minHeight='200px';viewer.append(frame);wrapper.append(viewer,notice);container.replaceChildren(wrapper);
-  const source=new URL(embedSource({platform:'YouTube',embedUrl:'https://www.youtube.com/embed/'+id,start:0,end:86400},location.origin)),video=youtubeFrame(frame,source,record.title||'영상'),api=youtubeApi();video.iframe.style.pointerEvents='none';api.catch(()=>{});
-  const result={caseId:record.id,wrapper,viewer,frame,notice,video,api,destroy(){video.cancel();wrapper.remove();}};preparations.add(result);return result;
+  const youtube=/^[-\w]{11}$/.test(id||'');
+  if(!/^OLY-\d{3}$/.test(record.id)||(!youtube&&!['vimeo.com','www.vimeo.com','t.me','bitchute.com','www.bitchute.com'].includes(watch.hostname)))return null;
+  styles();const wrapper=node('section','oly-subtitles'),heading=node('h2','os-title',record.title||'영상'),viewer=node('div','os-viewer'),frame=node('div','os-frame'),notice=node('p','os-status');wrapper.setAttribute('aria-label','한국어 자막 영상');wrapper.setAttribute('aria-busy','true');wrapper.dataset.playbackState='loading';notice.setAttribute('role','status');notice.hidden=true;frame.style.minHeight='200px';viewer.append(frame);wrapper.append(heading,viewer,notice);container.replaceChildren(wrapper);
+  let video,api;
+  if(youtube){const source=new URL(embedSource({platform:'YouTube',embedUrl:'https://www.youtube.com/embed/'+id,start:0,end:86400},location.origin));video=youtubeFrame(frame,source,record.title||'영상');api=youtubeApi();video.iframe.style.pointerEvents='none';api.catch(()=>{});}
+  const result={caseId:record.id,wrapper,heading,viewer,frame,notice,video,api,destroy(){video?.cancel();wrapper.remove();}};preparations.add(result);return result;
 }
 
 export function mountSubtitlePlayer(container,input,options={}){
   const data=selectSubtitleExcerpt(input,options.excerpt),isVisual=data.method==='source-reviewed-visual-summary',isCaptionTranslation=data.method==='source-visible-caption-translation',isTranslation=data.method==='source-segment-translation'||isCaptionTranslation,isSummary=data.method==='source-reviewed-summary'||isVisual;
   styles();
-  let prepared=options.prepared;if(prepared&&(!preparations.has(prepared)||prepared.caseId!==data.caseId||data.platform!=='YouTube'||isNativeSubtitle(data)||options.mediaUrl||data.mediaUrl||!prepared.wrapper.isConnected||prepared.wrapper.parentElement!==container||prepared.video.source.pathname!==new URL(embedSource(data,location.origin)).pathname)){if(preparations.has(prepared))prepared.destroy();prepared=null;}
+  let prepared=options.prepared;if(prepared&&(!preparations.has(prepared)||prepared.caseId!==data.caseId||!prepared.video||data.platform!=='YouTube'||isNativeSubtitle(data)||options.mediaUrl||data.mediaUrl||!prepared.wrapper.isConnected||prepared.wrapper.parentElement!==container||prepared.video.source.pathname!==new URL(embedSource(data,location.origin)).pathname)){if(preparations.has(prepared))prepared.destroy();prepared=null;}
   let disposed=false,adapter=null,poll=null,providerTimer=null,cancelFrameLoad=null,played=false,current=data.start,active=null;
-  const wrapper=prepared?.wrapper||node('section','oly-subtitles');wrapper.setAttribute('aria-label','한국어 자막 영상');wrapper.dataset.playbackState='loading';
+  const wrapper=prepared?.wrapper||node('section','oly-subtitles');wrapper.setAttribute('aria-label','한국어 자막 영상');wrapper.setAttribute('aria-busy','true');wrapper.dataset.playbackState='loading';
   const heading=node('h2','os-title',data.title);
   const viewer=prepared?.viewer||node('div','os-viewer');
   const bar=node('div','os-bar'),badge=node('span','',isVisual?'한국어 화면 설명':isCaptionTranslation?'한국어 화면자막 번역':isSummary?'한국어 요약 자막':isTranslation?'한국어 구간 번역':'한국어 자막'),expand=node('button','','크게 보기');expand.type='button';expand.setAttribute('aria-expanded','false');bar.append(badge,expand);
@@ -49,7 +51,7 @@ export function mountSubtitlePlayer(container,input,options={}){
   for(const[value,text]of modes){const option=node('option','',text);option.value=value;mode.append(option);}label.append(mode);
   const clock=node('output','os-clock',subtitleClock(data.start));clock.setAttribute('aria-label','영상 재생 시간');controls.append(label,clock);
   if(prepared){viewer.prepend(bar);viewer.append(captions,controls);}else viewer.append(bar,frame,captions,controls);
-  const status=node('p','os-status','영상을 불러오고 있습니다.');status.setAttribute('role','status');
+  const status=node('p','os-status');status.setAttribute('role','status');status.hidden=true;
   const scope=node('p','os-scope',data.scope==='case-segment'?`${data.excerptOf?'대표 선정 구간':'해당 사례 구간'} · ${subtitleClock(data.start)}–${subtitleClock(data.end)}${data.excerptOf?' · '+subtitleClock(data.end-data.start):''}`:'');scope.hidden=data.scope!=='case-segment';
   if(options.selectionLabel&&data.excerptOf)scope.textContent+=' · '+options.selectionLabel;
   const details=node('details','os-transcript'),summary=node('summary','',isSummary?'한국어 내용 정리 · 문장을 누르면 장면 이동':isTranslation?'한국어 구간 대본 · 문장을 누르면 장면 이동':'한국어 전체 대본 · 문장을 누르면 장면 이동'),list=node('ol');details.append(summary,list);
@@ -57,8 +59,8 @@ export function mountSubtitlePlayer(container,input,options={}){
   for(const cue of data.cues){const li=node('li'),button=node('button'),time=node('time','',subtitleClock(cue.start)),text=node('span','',cue.ko.replaceAll('\n',' '));button.type='button';button.disabled=true;button.append(time,text);button.addEventListener('click',async()=>{if(!adapter||disposed)return;try{await adapter.seek(cue.start+.01);if(disposed)return;await adapter.play();}catch{message('영상 재생 버튼을 누른 뒤 다시 선택해주세요.',true);}});li.append(button);list.append(li);rows.set(cue.id,{li,button});}
   const note=node('p','os-note',isCaptionTranslation?'영상에 이미 표시된 원문 화면 자막의 선택 구간을 한국어로 옮겼습니다. 장면을 초 단위로 대조한 번역 초안이며, 원음 전체 청취 검수나 영상 전체의 완역은 아닙니다.':isVisual?'영상의 화면 문구를 번역하고 확인한 장면을 한국어로 설명한 자료입니다. 음성 번역이 아니며, 전후 표시나 동작만으로 제품 효과를 검증한 것은 아닙니다.':isSummary?'원문 발언의 선택 구간을 정리한 한국어 요약 자막입니다. 발언 전체의 직역은 아니며, 체험자의 주장이나 신원을 독립 검증한 자료가 아닙니다.':isTranslation?'표시된 선택 구간의 음성전사에 기반한 한국어 번역 초안입니다. 원문 인식이 불명확한 부분은 별도 표시했습니다. 영상 전체의 번역이나 발언 내용의 독립 검증은 아닙니다.':data.method==='provided-korean-caption-edited'?'제공된 한국어 자동자막을 다듬었습니다.':'원문 자막·음성전사에 기반한 번역입니다. 영상 속 개인의 발언을 옮겼으며 내용의 독립 검증은 아닙니다.');
   const sourceLink=node('a','os-source','원본 영상 보기 ↗');sourceLink.href=sourceWatchUrl(data.watchUrl,data.start);sourceLink.target='_blank';sourceLink.rel='noopener noreferrer';
-  if(prepared){prepared.notice.remove();wrapper.prepend(heading);wrapper.append(status,scope,details,sourceLink,note);}else{wrapper.append(heading,viewer,status,scope,details,sourceLink,note);container.replaceChildren(wrapper);}
-  function message(text,error=false){if(disposed)return;status.textContent=text;status.dataset.error=String(error);}
+  if(prepared){prepared.notice.remove();prepared.heading.remove();wrapper.prepend(heading);wrapper.append(status,scope,details,sourceLink,note);}else{wrapper.append(heading,viewer,status,scope,details,sourceLink,note);container.replaceChildren(wrapper);}
+  function message(text,error=false){if(disposed)return;status.textContent=text;status.hidden=!text;status.dataset.error=String(error);}
   function expanded(value){viewer.classList.toggle('os-expanded',value);expand.textContent=value?'작게 보기':'크게 보기';expand.setAttribute('aria-expanded',String(value));}
   const key=event=>{if(event.key==='Escape')expanded(false);};document.addEventListener('keydown',key);
   expand.addEventListener('click',()=>expanded(!viewer.classList.contains('os-expanded')));
@@ -73,9 +75,10 @@ export function mountSubtitlePlayer(container,input,options={}){
     if(active!==(cue?.id??null)){rows.get(active)?.li.removeAttribute('aria-current');active=cue?.id??null;if(active!==null)rows.get(active)?.li.setAttribute('aria-current','true');}
     if(played&&seconds>=data.end-.02){adapter?.pause();message('해당 사례 구간이 끝났습니다. 대본을 눌러 다시 볼 수 있습니다.');}
   }
+  render(data.start);
   mode.addEventListener('change',()=>render(current));
-  function ready(){if(disposed)return;clearTimeout(providerTimer);wrapper.dataset.playbackState='ready';for(const row of rows.values())row.button.disabled=false;message('재생 버튼을 누르면 영상 아래에 한국어 자막이 나옵니다.');options.onReady?.(data.caseId);}
-  function error(text){if(disposed)return;clearTimeout(providerTimer);wrapper.dataset.playbackState='error';message(text,true);details.open=true;options.onError?.({caseId:data.caseId,message:text});}
+  function ready(){if(disposed)return;clearTimeout(providerTimer);wrapper.setAttribute('aria-busy','false');wrapper.dataset.playbackState='ready';for(const row of rows.values())row.button.disabled=false;message('재생 버튼을 누르면 영상 아래에 한국어 자막이 나옵니다.');options.onReady?.(data.caseId);}
+  function error(text){if(disposed)return;clearTimeout(providerTimer);wrapper.setAttribute('aria-busy','false');wrapper.dataset.playbackState='error';message(text,true);details.open=true;options.onError?.({caseId:data.caseId,message:text});}
   const promise=(async()=>{
     try{
       if(isNativeSubtitle(data)||options.mediaUrl||data.mediaUrl){
