@@ -3,6 +3,7 @@ export const isNativeSubtitle=data=>!!data&&['Telegram','Bitchute'].includes(dat
 export function validateSubtitle(input) {
   if(!input||!/^OLY-\d{3}$/.test(input.caseId)||!['YouTube','Vimeo','Telegram','Bitchute','Substack','Rutube'].includes(input.platform))throw new Error('Invalid subtitle identity');
   if(typeof input.title!=='string'||input.title.length>300||!Number.isFinite(input.start)||!Number.isFinite(input.end)||input.start<0||input.end<=input.start||input.end>86400)throw new Error('Invalid subtitle bounds');
+  if(input.mediaStart!==undefined&&(!Number.isFinite(input.mediaStart)||input.mediaStart<0||input.mediaStart>input.start))throw new Error('Invalid private media source offset');
   if(!Array.isArray(input.cues)||!input.cues.length||input.cues.length>2500)throw new Error('Invalid subtitle cues');
   let previous=-1;
   for(const cue of input.cues){

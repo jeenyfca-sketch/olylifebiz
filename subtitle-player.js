@@ -1,5 +1,6 @@
-import {validateSubtitle,selectSubtitleExcerpt,isNativeSubtitle,embedSource,checkedMediaUrl,activeSubtitle,subtitleClock,sourceWatchUrl} from './subtitle-data.js?v=20261025-rutube-interview';
+import {validateSubtitle,selectSubtitleExcerpt,isNativeSubtitle,embedSource,checkedMediaUrl,activeSubtitle,subtitleClock,sourceWatchUrl} from './subtitle-data.js?v=20261025-private-clip-time';
 import {createRutubeAdapter} from './rutube-player.js?v=20261025-rutube-interview';
+import {createNativeSubtitleAdapter} from './native-subtitle-adapter.js?v=20261025-private-clip-time';
 
 const loaders=new Map();
 function script(url,ready){
@@ -86,11 +87,10 @@ export function mountSubtitlePlayer(container,input,options={}){
         wrapper.dataset.playbackKind='private-media';
         const video=node('video');video.controls=true;video.playsInline=true;video.preload='metadata';video.setAttribute('controlslist','nofullscreen noremoteplayback');video.disablePictureInPicture=true;
         video.muted=options.muted===true;video.src=data.platform==='Substack'?embedSource(data,location.origin):checkedMediaUrl(options.mediaUrl||data.mediaUrl,data.caseId,location.origin);frame.append(video);
-        adapter={seek:async seconds=>{video.currentTime=seconds;},play:()=>video.play(),pause:()=>video.pause(),destroy:()=>{video.pause();video.removeAttribute('src');video.load();}};
-        video.addEventListener('loadedmetadata',()=>{if(disposed)return;video.currentTime=Math.min(data.start,video.duration);ready();});
-        video.addEventListener('timeupdate',()=>render(video.currentTime));video.addEventListener('seeking',()=>render(video.currentTime));
-        video.addEventListener('play',()=>{if(disposed)return;played=true;wrapper.dataset.playbackState='playing';message('영상이 재생 중입니다. 영상 아래에서 한국어 자막을 확인하세요.');});
-        video.addEventListener('pause',()=>{if(!disposed&&played)wrapper.dataset.playbackState='paused';});video.addEventListener('ended',()=>{if(!disposed)wrapper.dataset.playbackState='ended';});video.addEventListener('error',()=>error('영상을 불러오지 못했습니다. 잠시 후 다시 열어주세요.'));
+        adapter=createNativeSubtitleAdapter(video,data,{onReady:()=>{if(!disposed)ready();},onTime:seconds=>render(seconds),
+          onPlay:()=>{if(disposed)return;played=true;wrapper.dataset.playbackState='playing';message('영상이 재생 중입니다. 영상 아래에서 한국어 자막을 확인하세요.');},
+          onPause:()=>{if(!disposed&&played)wrapper.dataset.playbackState='paused';},onEnd:()=>{if(!disposed)wrapper.dataset.playbackState='ended';},
+          onError:()=>error('영상을 불러오지 못했습니다. 잠시 후 다시 열어주세요.')});
         return;
       }
       if(data.platform==='Rutube'){
