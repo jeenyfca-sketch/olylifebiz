@@ -1,4 +1,4 @@
-import {validateSubtitle,selectSubtitleExcerpt,isNativeSubtitle,embedSource,checkedMediaUrl,activeSubtitle,subtitleClock,sourceWatchUrl} from './subtitle-data.js?v=20261022-source-start';
+import {validateSubtitle,selectSubtitleExcerpt,isNativeSubtitle,embedSource,checkedMediaUrl,activeSubtitle,subtitleClock,sourceWatchUrl} from './subtitle-data.js?v=20261025-public-interview';
 
 const loaders=new Map();
 function script(url,ready){
@@ -27,7 +27,7 @@ const preparations=new WeakSet();
 export function prepareSubtitlePlayer(container,record){
   let watch,id;try{watch=new URL(record.video_url);if(watch.protocol!=='https:'||watch.username||watch.password||watch.port)return null;if(['www.youtube.com','youtube.com','m.youtube.com'].includes(watch.hostname))id=watch.pathname==='/watch'?watch.searchParams.get('v'):watch.pathname.match(/^\/(?:shorts|live)\/([\w-]{11})\/?$/)?.[1];else if(watch.hostname==='youtu.be')id=watch.pathname.slice(1);}catch{return null;}
   const youtube=/^[-\w]{11}$/.test(id||'');
-  if(!/^OLY-\d{3}$/.test(record.id)||(!youtube&&!['vimeo.com','www.vimeo.com','t.me','bitchute.com','www.bitchute.com'].includes(watch.hostname)))return null;
+  if(!/^OLY-\d{3}$/.test(record.id)||(!youtube&&!['vimeo.com','www.vimeo.com','t.me','bitchute.com','www.bitchute.com'].includes(watch.hostname)&&!/^\w[\w-]*\.substack\.com$/.test(watch.hostname)))return null;
   styles();const wrapper=node('section','oly-subtitles'),heading=node('h2','os-title',record.title||'영상'),viewer=node('div','os-viewer'),frame=node('div','os-frame'),notice=node('p','os-status');wrapper.setAttribute('aria-label','한국어 자막 영상');wrapper.setAttribute('aria-busy','true');wrapper.dataset.playbackState='loading';notice.setAttribute('role','status');notice.hidden=true;frame.style.minHeight='200px';viewer.append(frame);wrapper.append(heading,viewer,notice);container.replaceChildren(wrapper);
   let video,api;
   if(youtube){const source=new URL(embedSource({platform:'YouTube',embedUrl:'https://www.youtube.com/embed/'+id,start:0,end:86400},location.origin));video=youtubeFrame(frame,source,record.title||'영상');api=youtubeApi();video.iframe.style.pointerEvents='none';api.catch(()=>{});}
@@ -81,10 +81,10 @@ export function mountSubtitlePlayer(container,input,options={}){
   function error(text){if(disposed)return;clearTimeout(providerTimer);wrapper.setAttribute('aria-busy','false');wrapper.dataset.playbackState='error';message(text,true);details.open=true;options.onError?.({caseId:data.caseId,message:text});}
   const promise=(async()=>{
     try{
-      if(isNativeSubtitle(data)||options.mediaUrl||data.mediaUrl){
+      if(isNativeSubtitle(data)||data.platform==='Substack'||options.mediaUrl||data.mediaUrl){
         wrapper.dataset.playbackKind='private-media';
         const video=node('video');video.controls=true;video.playsInline=true;video.preload='metadata';video.setAttribute('controlslist','nofullscreen noremoteplayback');video.disablePictureInPicture=true;
-        video.muted=options.muted===true;video.src=checkedMediaUrl(options.mediaUrl||data.mediaUrl,data.caseId,location.origin);frame.append(video);
+        video.muted=options.muted===true;video.src=data.platform==='Substack'?embedSource(data,location.origin):checkedMediaUrl(options.mediaUrl||data.mediaUrl,data.caseId,location.origin);frame.append(video);
         adapter={seek:async seconds=>{video.currentTime=seconds;},play:()=>video.play(),pause:()=>video.pause(),destroy:()=>{video.pause();video.removeAttribute('src');video.load();}};
         video.addEventListener('loadedmetadata',()=>{if(disposed)return;video.currentTime=Math.min(data.start,video.duration);ready();});
         video.addEventListener('timeupdate',()=>render(video.currentTime));video.addEventListener('seeking',()=>render(video.currentTime));
