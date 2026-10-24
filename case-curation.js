@@ -1279,10 +1279,19 @@ export const caseCuration = {
     }
   },
   "여성 요실금": {
-    "representatives": [],
+    "representatives": [
+      "OLY-442"
+    ],
     "retained": [],
-    "excerpts": {},
-    "labels": {},
+    "excerpts": {
+      "OLY-442": {
+        "start": 2366.48,
+        "end": 2428.55
+      }
+    },
+    "labels": {
+      "OLY-442": "본인 직접 체험 · 한국어 요약"
+    },
     "candidates": {
       "OLY-359": "원본과 전체 자막을 보관합니다. 직접 출연·본인 발언·분류 적합성·전후 맥락·중복을 비교해 다른 자료를 우선했습니다.",
       "OLY-147": "중국어·혼용 자료는 다른 언어의 직접 체험을 우선하는 요청 기준에 따라 후보로 보관합니다. 원본과 전체 한국어 자막은 보존합니다."
