@@ -1016,7 +1016,8 @@ export const caseCuration = {
     "representatives": [
       "OLY-127",
       "OLY-386",
-      "OLY-427"
+      "OLY-427",
+      "OLY-430"
     ],
     "retained": [],
     "excerpts": {
@@ -1031,12 +1032,17 @@ export const caseCuration = {
       "OLY-427": {
         "start": 6.12,
         "end": 124.95
+      },
+      "OLY-430": {
+        "start": 16.64,
+        "end": 77.429
       }
     },
     "labels": {
       "OLY-127": "본인 직접 체험",
       "OLY-386": "본인 직접 체험",
-      "OLY-427": "본인 직접 체험 · 한국어 요약"
+      "OLY-427": "본인 직접 체험 · 한국어 요약",
+      "OLY-430": "본인 직접 체험"
     },
     "candidates": {
       "OLY-108": "원본과 전체 자막을 보관합니다. 직접 출연·본인 발언·분류 적합성·전후 맥락·중복을 비교해 다른 자료를 우선했습니다.",
@@ -1262,7 +1268,8 @@ export const caseCuration = {
     "representatives": [
       "OLY-052",
       "OLY-385",
-      "OLY-382"
+      "OLY-382",
+      "OLY-431"
     ],
     "retained": [],
     "excerpts": {
@@ -1277,12 +1284,17 @@ export const caseCuration = {
       "OLY-382": {
         "start": 34,
         "end": 102
+      },
+      "OLY-431": {
+        "start": 12.16,
+        "end": 80.03
       }
     },
     "labels": {
       "OLY-052": "본인 직접 체험",
       "OLY-385": "본인 직접 체험 · 짧은 구간",
-      "OLY-382": "본인 직접 체험"
+      "OLY-382": "본인 직접 체험",
+      "OLY-431": "본인 직접 체험"
     },
     "candidates": {
       "OLY-116": "원본과 전체 자막을 보관합니다. 직접 출연·본인 발언·분류 적합성·전후 맥락·중복을 비교해 다른 자료를 우선했습니다.",
