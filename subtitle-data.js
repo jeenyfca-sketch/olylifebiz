@@ -1,7 +1,7 @@
 const PROJECT='https://seljcdjixvlguyumifjf.supabase.co';
 export const isNativeSubtitle=data=>!!data&&['Telegram','Bitchute'].includes(data.platform);
 export function validateSubtitle(input) {
-  if(!input||!/^OLY-\d{3}$/.test(input.caseId)||!['YouTube','Vimeo','Telegram','Bitchute','Substack'].includes(input.platform))throw new Error('Invalid subtitle identity');
+  if(!input||!/^OLY-\d{3}$/.test(input.caseId)||!['YouTube','Vimeo','Telegram','Bitchute','Substack','Rutube'].includes(input.platform))throw new Error('Invalid subtitle identity');
   if(typeof input.title!=='string'||input.title.length>300||!Number.isFinite(input.start)||!Number.isFinite(input.end)||input.start<0||input.end<=input.start||input.end>86400)throw new Error('Invalid subtitle bounds');
   if(!Array.isArray(input.cues)||!input.cues.length||input.cues.length>2500)throw new Error('Invalid subtitle cues');
   let previous=-1;
@@ -12,7 +12,7 @@ export function validateSubtitle(input) {
   }
   if(!isNativeSubtitle(input))embedSource(input,'https://example.test');
   const watch=new URL(input.watchUrl);
-  if(watch.protocol!=='https:'||watch.username||watch.password||watch.port||!(['www.youtube.com','youtube.com','youtu.be','vimeo.com','www.vimeo.com','t.me','www.bitchute.com','bitchute.com'].includes(watch.hostname)||(input.platform==='Substack'&&/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.substack\.com$/.test(watch.hostname))))throw new Error('Invalid original link');
+  if(watch.protocol!=='https:'||watch.username||watch.password||watch.port||!(['www.youtube.com','youtube.com','youtu.be','vimeo.com','www.vimeo.com','t.me','www.bitchute.com','bitchute.com'].includes(watch.hostname)||(input.platform==='Substack'&&/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.substack\.com$/.test(watch.hostname))||(input.platform==='Rutube'&&watch.hostname==='rutube.ru')))throw new Error('Invalid original link');
   if(input.platform==='Bitchute'){
     const id=watch.pathname.match(/^\/video\/([a-zA-Z0-9]{8,24})\/?$/)?.[1],embed=new URL(input.embedUrl);
     if(!id||!['bitchute.com','www.bitchute.com'].includes(watch.hostname)||embed.protocol!=='https:'||embed.username||embed.password||embed.port||!['bitchute.com','www.bitchute.com'].includes(embed.hostname)||embed.pathname.replace(/\/$/,'')!=='/embed/'+id)throw new Error('Invalid BitChute source');
@@ -52,6 +52,11 @@ export function selectSubtitleExcerpt(input, excerpt) {
 export function embedSource(data,origin) {
   const raw=new URL(data.embedUrl);
   if(raw.protocol!=='https:'||raw.username||raw.password||raw.port)throw new Error('Invalid embed URL');
+  if(data.platform==='Rutube'){
+    const watch=new URL(data.watchUrl),id=watch.pathname.match(/^\/video\/([a-f0-9]{32})\/?$/)?.[1];
+    if(watch.protocol!=='https:'||watch.username||watch.password||watch.port||watch.hostname!=='rutube.ru'||watch.search||watch.hash||!id||raw.hostname!=='rutube.ru'||raw.pathname.replace(/\/$/,'')!=='/play/embed/'+id||raw.search||raw.hash)throw new Error('Invalid Rutube source');
+    const url=new URL('https://rutube.ru/play/embed/'+id);url.searchParams.set('t',String(Math.floor(data.start)));url.searchParams.set('stopTime',String(Math.ceil(data.end)));return url.href;
+  }
   if(data.platform==='Substack'){
     const watch=new URL(data.watchUrl);
     if(watch.protocol!=='https:'||watch.username||watch.password||watch.port||!/^https:\/\/[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.substack\.com\/p\/[a-z0-9-]+$/.test(watch.href)||raw.origin!==watch.origin||!/^\/api\/v1\/video\/upload\/[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}\/src$/.test(raw.pathname)||raw.search!=='?type=mp4'||raw.hash)throw new Error('Invalid Substack source');

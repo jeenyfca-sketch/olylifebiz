@@ -10,8 +10,8 @@ function normalizeMeetingLink(raw) {
 const backend = await window.olyCloudReady;
 const {normalizeCases} = await import(new URL('./case-catalog.js?v=categories5',document.baseURI));
 const {caseCuration,getCaseCuration,curateCases,curationCounts} = await import(new URL('./case-curation.js?v=20261025-priority-round5-v1',document.baseURI));
-const {sourceWatchUrl} = await import(new URL('./subtitle-data.js?v=20261025-public-interview',document.baseURI));
-const subtitleModule = await import(new URL('./subtitle-player.js?v=20261025-public-interview',document.baseURI));
+const {sourceWatchUrl} = await import(new URL('./subtitle-data.js?v=20261025-rutube-interview',document.baseURI));
+const subtitleModule = await import(new URL('./subtitle-player.js?v=20261025-rutube-interview',document.baseURI));
 const {getMaterialVideos} = await import(new URL('./material-videos.js?v=1',document.baseURI));
 const {groupMeetings} = await import(new URL('./meeting-schedule.js?v=1',document.baseURI));
 const adminMode = new URLSearchParams(location.search).get('admin') === '1';

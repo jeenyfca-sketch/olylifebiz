@@ -1,4 +1,5 @@
-import {validateSubtitle,selectSubtitleExcerpt,isNativeSubtitle,embedSource,checkedMediaUrl,activeSubtitle,subtitleClock,sourceWatchUrl} from './subtitle-data.js?v=20261025-public-interview';
+import {validateSubtitle,selectSubtitleExcerpt,isNativeSubtitle,embedSource,checkedMediaUrl,activeSubtitle,subtitleClock,sourceWatchUrl} from './subtitle-data.js?v=20261025-rutube-interview';
+import {createRutubeAdapter} from './rutube-player.js?v=20261025-rutube-interview';
 
 const loaders=new Map();
 function script(url,ready){
@@ -27,7 +28,7 @@ const preparations=new WeakSet();
 export function prepareSubtitlePlayer(container,record){
   let watch,id;try{watch=new URL(record.video_url);if(watch.protocol!=='https:'||watch.username||watch.password||watch.port)return null;if(['www.youtube.com','youtube.com','m.youtube.com'].includes(watch.hostname))id=watch.pathname==='/watch'?watch.searchParams.get('v'):watch.pathname.match(/^\/(?:shorts|live)\/([\w-]{11})\/?$/)?.[1];else if(watch.hostname==='youtu.be')id=watch.pathname.slice(1);}catch{return null;}
   const youtube=/^[-\w]{11}$/.test(id||'');
-  if(!/^OLY-\d{3}$/.test(record.id)||(!youtube&&!['vimeo.com','www.vimeo.com','t.me','bitchute.com','www.bitchute.com'].includes(watch.hostname)&&!/^\w[\w-]*\.substack\.com$/.test(watch.hostname)))return null;
+  if(!/^OLY-\d{3}$/.test(record.id)||(!youtube&&!['vimeo.com','www.vimeo.com','t.me','bitchute.com','www.bitchute.com','rutube.ru'].includes(watch.hostname)&&!/^\w[\w-]*\.substack\.com$/.test(watch.hostname)))return null;
   styles();const wrapper=node('section','oly-subtitles'),heading=node('h2','os-title',record.title||'영상'),viewer=node('div','os-viewer'),frame=node('div','os-frame'),notice=node('p','os-status');wrapper.setAttribute('aria-label','한국어 자막 영상');wrapper.setAttribute('aria-busy','true');wrapper.dataset.playbackState='loading';notice.setAttribute('role','status');notice.hidden=true;frame.style.minHeight='200px';viewer.append(frame);wrapper.append(heading,viewer,notice);container.replaceChildren(wrapper);
   let video,api;
   if(youtube){const source=new URL(embedSource({platform:'YouTube',embedUrl:'https://www.youtube.com/embed/'+id,start:0,end:86400},location.origin));video=youtubeFrame(frame,source,record.title||'영상');api=youtubeApi();video.iframe.style.pointerEvents='none';api.catch(()=>{});}
@@ -92,7 +93,15 @@ export function mountSubtitlePlayer(container,input,options={}){
         video.addEventListener('pause',()=>{if(!disposed&&played)wrapper.dataset.playbackState='paused';});video.addEventListener('ended',()=>{if(!disposed)wrapper.dataset.playbackState='ended';});video.addEventListener('error',()=>error('영상을 불러오지 못했습니다. 잠시 후 다시 열어주세요.'));
         return;
       }
-      if(data.platform==='Vimeo'){
+      if(data.platform==='Rutube'){
+        const iframe=node('iframe');iframe.title=data.title+' 원본 영상';iframe.allow='autoplay; encrypted-media';iframe.referrerPolicy='strict-origin-when-cross-origin';iframe.style.width='100%';iframe.style.height='100%';iframe.style.minHeight='200px';
+        providerTimer=setTimeout(()=>error('영상 연결에 응답이 없습니다. 잠시 후 다시 열어주세요.'),20000);
+        adapter=createRutubeAdapter(iframe,{start:data.start,muted:options.muted,
+          onReady:()=>ready(),onTime:seconds=>{if(!disposed)render(played?seconds:Math.max(data.start,seconds));},
+          onState:state=>{if(disposed)return;if(state==='playing'){played=true;wrapper.dataset.playbackState='playing';message('영상이 재생 중입니다. 영상 아래에서 한국어 자막을 확인하세요.');}else if(state==='paused')wrapper.dataset.playbackState='paused';else wrapper.dataset.playbackState='ended';},
+          onError:()=>error('원본 영상이 재생되지 않습니다. 원본 링크와 대본을 확인해주세요.')});
+        iframe.src=embedSource(data,location.origin);frame.append(iframe);
+      }else if(data.platform==='Vimeo'){
         const iframe=node('iframe');iframe.title=data.title+' 원본 영상';iframe.allow='autoplay; encrypted-media; picture-in-picture';iframe.referrerPolicy='strict-origin-when-cross-origin';iframe.src=embedSource(data,location.origin);frame.append(iframe);
         await script('https://player.vimeo.com/api/player.js',()=>!!window.Vimeo?.Player);if(disposed)return;
         const player=new window.Vimeo.Player(iframe);adapter={seek:async seconds=>{const actual=await player.setCurrentTime(seconds);render(actual);},play:()=>player.play(),pause:()=>{player.pause().catch(()=>{});},destroy:()=>{player.destroy().catch(()=>{});}};
