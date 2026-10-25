@@ -1511,7 +1511,8 @@ export const caseCuration = {
     "representatives": [
       "OLY-389",
       "OLY-138",
-      "OLY-428"
+      "OLY-428",
+      "OLY-445"
     ],
     "retained": [],
     "excerpts": {
@@ -1526,12 +1527,17 @@ export const caseCuration = {
       "OLY-428": {
         "start": 1104,
         "end": 1134.07
+      },
+      "OLY-445": {
+        "start": 0,
+        "end": 66.633333
       }
     },
     "labels": {
       "OLY-389": "본인 직접 체험",
       "OLY-138": "본인 직접 체험 · 짧은 구간",
-      "OLY-428": "본인 직접 체험 · 짧은 구간"
+      "OLY-428": "본인 직접 체험 · 짧은 구간",
+      "OLY-445": "본인 직접 체험 · 한국어 요약 · 발췌 편집"
     },
     "candidates": {
       "OLY-398": "원본과 전체 자막을 보관합니다. 직접 출연·본인 발언·분류 적합성·전후 맥락·중복을 비교해 다른 자료를 우선했습니다.",
