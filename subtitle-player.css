@@ -1,36 +1,38 @@
-.oly-subtitles{font-family:"Malgun Gothic",system-ui,sans-serif;color:#273e32;line-height:1.6;width:100%;min-width:0}
+.oly-subtitles{font-family:"Malgun Gothic",system-ui,sans-serif;color:#102B3A;line-height:1.6;width:100%;min-width:0}
 .oly-subtitles *{box-sizing:border-box}
 .oly-subtitles .os-title{font-size:22px;line-height:1.45;word-break:keep-all;margin:0 0 14px}
-.oly-subtitles .os-viewer{border-radius:16px;overflow:hidden;background:#101a14;box-shadow:0 8px 24px #1b392019}
-.oly-subtitles .os-bar,.oly-subtitles .os-controls{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;background:#263e31;color:#fff;font-size:13px}
-.oly-subtitles .os-bar button{background:transparent;color:#fff;border:1px solid #a4baa6;border-radius:8px;font:inherit;padding:5px 12px;cursor:pointer;min-height:32px;width:auto}
+.oly-subtitles .os-viewer{border-radius:16px;overflow:hidden;background:#102B3A;box-shadow:0 8px 24px #102B3A19}
+.oly-subtitles .os-bar,.oly-subtitles .os-controls{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;background:#102B3A;color:#fff;font-size:13px}
+.oly-subtitles .os-bar button{background:transparent;color:#fff;border:1px solid #8AA4B1;border-radius:8px;font:inherit;padding:5px 12px;cursor:pointer;min-height:32px;width:auto}
 .oly-subtitles .os-frame{position:relative;aspect-ratio:16/9;min-height:200px;background:#000}
 .oly-subtitles iframe,.oly-subtitles video{position:absolute;inset:0;width:100%;height:100%;border:0;object-fit:contain}
 .oly-subtitles .os-captions{padding:17px 15px;min-height:110px;text-align:center;border-top:1px solid #ffffff15;display:flex;flex-direction:column;justify-content:center}
 .oly-subtitles .os-ko{font-size:clamp(18px,2.7vw,24px);line-height:1.55;color:#fff;font-weight:700;white-space:pre-line;margin:0;word-break:keep-all}
-.oly-subtitles .os-original{font-size:14px;line-height:1.5;color:#c9d8c9;margin:10px 0 0}
+.oly-subtitles .os-original{font-size:14px;line-height:1.5;color:#D7E6EA;margin:10px 0 0}
 .oly-subtitles .os-uncertain{color:#f2cc91;font-size:11px;display:block;margin-top:8px}
 .oly-subtitles [hidden]{display:none!important}
-.oly-subtitles .os-controls{background:#1c3022}
-.oly-subtitles .os-controls label{display:flex;gap:9px;align-items:center;color:#e0e8e0;font-size:13px;margin:0}
-.oly-subtitles select{width:auto;max-width:190px;min-height:32px;border:1px solid #78927b;border-radius:8px;background:#29432f;color:#fff;padding:4px 8px;font:inherit}
+.oly-subtitles .os-controls{background:#102B3A}
+.oly-subtitles .os-controls label{display:flex;gap:9px;align-items:center;color:#E4EEF2;font-size:13px;margin:0}
+.oly-subtitles select{width:auto;max-width:190px;min-height:32px;border:1px solid #8AA4B1;border-radius:8px;background:#173E51;color:#fff;padding:4px 8px;font:inherit}
 .oly-subtitles .os-clock{font-variant-numeric:tabular-nums}
-.oly-subtitles .os-status,.oly-subtitles .os-scope{font-size:12px;color:#617663;margin:10px 0}
+.oly-subtitles .os-status,.oly-subtitles .os-scope{font-size:12px;color:#45606D;margin:10px 0}
 .oly-subtitles .os-status[data-error=true]{color:#a13d24}
-.oly-subtitles .os-transcript{background:#fff;border:1px solid #cfddc8;border-radius:12px;margin-top:15px;overflow:hidden}
+.oly-subtitles .os-transcript{background:#fff;border:1px solid #CBD8DD;border-radius:12px;margin-top:15px;overflow:hidden}
 .oly-subtitles summary{cursor:pointer;padding:14px;font-size:14px;font-weight:700}
 .oly-subtitles ol{list-style:none;max-height:360px;overflow:auto;padding:0 10px 10px;margin:0}
 .oly-subtitles li{border-radius:8px}
-.oly-subtitles li[aria-current=true]{background:#ffebcf}
-.oly-subtitles li button{display:flex;gap:12px;width:100%;text-align:left;font-size:14px;line-height:1.55;background:transparent;color:#273e32;border:0;border-bottom:1px solid #edf1e9;border-radius:0;padding:10px 8px;cursor:pointer;font-family:inherit}
+.oly-subtitles li[aria-current=true]{background:#E4F2F1}
+.oly-subtitles li button{display:flex;gap:12px;width:100%;text-align:left;font-size:14px;line-height:1.55;background:transparent;color:#102B3A;border:0;border-bottom:1px solid #E4ECEF;border-radius:0;padding:10px 8px;cursor:pointer;font-family:inherit}
 .oly-subtitles li button:disabled{cursor:default;opacity:.8}
-.oly-subtitles time{font-size:12px;white-space:nowrap;flex-shrink:0;color:#788a79;padding-top:2px;font-variant-numeric:tabular-nums}
-.oly-subtitles .os-note{font-size:11px;color:#758474;line-height:1.6;margin:15px 0}
-.oly-subtitles .os-expanded{position:fixed;inset:0;z-index:10010;border-radius:0;display:flex;flex-direction:column;background:#101a14}
+.oly-subtitles time{font-size:12px;white-space:nowrap;flex-shrink:0;color:#45606D;padding-top:2px;font-variant-numeric:tabular-nums}
+.oly-subtitles .os-note{font-size:11px;color:#45606D;line-height:1.6;margin:15px 0}
+.oly-subtitles .os-expanded{position:fixed;inset:0;z-index:10010;border-radius:0;display:flex;flex-direction:column;background:#102B3A}
 .oly-subtitles .os-expanded .os-frame{flex:1;min-height:0;aspect-ratio:auto}
 .oly-subtitles .os-expanded .os-captions{flex-shrink:0;max-height:45vh;overflow:auto;padding-bottom:max(18px,env(safe-area-inset-bottom))}
 .oly-subtitles .os-expanded .os-ko{font-size:clamp(20px,3vw,30px)}
 .oly-subtitles .os-expanded .os-bar,.oly-subtitles .os-expanded .os-controls{flex-shrink:0}
-.oly-subtitles button:focus-visible,.oly-subtitles select:focus-visible{outline:3px solid #eea346;outline-offset:3px}
+.oly-subtitles button:focus-visible,.oly-subtitles select:focus-visible{outline:3px solid #137F7C;outline-offset:3px}
 @media(max-width:520px){.oly-subtitles .os-title{font-size:20px}.oly-subtitles .os-captions{padding:15px 12px;min-height:120px}.oly-subtitles .os-ko{font-size:18px}.oly-subtitles .os-original{font-size:12px}.oly-subtitles li button{font-size:13px;gap:8px}.oly-subtitles .os-expanded .os-ko{font-size:20px}}
-.oly-subtitle-dialog{width:min(960px,94vw);max-height:94dvh;overflow:auto;border:0;border-radius:18px;padding:16px;background:#f6f9f3;color:#203329}.oly-subtitle-dialog::backdrop{background:#142319bb}.oly-subtitle-dialog .os-close{display:block;margin:0 0 12px auto;border:0;border-radius:10px;padding:10px 24px;background:#f7c47d;color:#26382d;font:inherit;cursor:pointer}
+.oly-subtitle-dialog{width:min(960px,94vw);max-height:94dvh;overflow:auto;border:0;border-radius:18px;padding:16px;background:#F4F7F8;color:#102B3A}.oly-subtitle-dialog::backdrop{background:#102B3ABB}.oly-subtitle-dialog .os-close{display:block;margin:0 0 12px auto;border:0;border-radius:10px;padding:10px 24px;background:#137F7C;color:#ffffff;font:inherit;cursor:pointer}
+
+.oly-subtitles .os-bar button{background:#137F7C;border-color:#137F7C}.oly-subtitles .os-bar button:hover,.oly-subtitle-dialog .os-close:hover{background:#106C69}.oly-subtitles .os-bar button:focus-visible,.oly-subtitles .os-controls select:focus-visible{outline-color:#fff}
