@@ -1,9 +1,11 @@
 const PROJECT='https://seljcdjixvlguyumifjf.supabase.co';
-export const isNativeSubtitle=data=>!!data&&['Telegram','Bitchute'].includes(data.platform);
+export const isNativeSubtitle=data=>!!data&&(['Telegram','Bitchute'].includes(data.platform)||data.requiresNativeMedia===true);
 export function validateSubtitle(input) {
   if(!input||!/^OLY-\d{3}$/.test(input.caseId)||!['YouTube','Vimeo','Telegram','Bitchute','Substack','Rutube'].includes(input.platform))throw new Error('Invalid subtitle identity');
   if(typeof input.title!=='string'||input.title.length>300||!Number.isFinite(input.start)||!Number.isFinite(input.end)||input.start<0||input.end<=input.start||input.end>86400)throw new Error('Invalid subtitle bounds');
   if(input.mediaStart!==undefined&&(!Number.isFinite(input.mediaStart)||input.mediaStart<0||input.mediaStart>input.start))throw new Error('Invalid private media source offset');
+  if(input.requiresNativeMedia!==undefined&&typeof input.requiresNativeMedia!=='boolean')throw new Error('Invalid required private media flag');
+  if(input.sourceStart!==undefined&&(!Number.isFinite(input.sourceStart)||input.sourceStart<0||input.sourceStart>86400))throw new Error('Invalid original source reference');
   if(!Array.isArray(input.cues)||!input.cues.length||input.cues.length>2500)throw new Error('Invalid subtitle cues');
   let previous=-1;
   for(const cue of input.cues){
@@ -11,7 +13,7 @@ export function validateSubtitle(input) {
     if(typeof cue.ko!=='string'||!cue.ko.trim()||cue.ko.length>4000||typeof cue.original!=='string'||cue.original.length>6000)throw new Error('Invalid subtitle text');
     previous=cue.end;
   }
-  if(!isNativeSubtitle(input))embedSource(input,'https://example.test');
+  if(!['Telegram','Bitchute'].includes(input.platform))embedSource(input,'https://example.test');
   const watch=new URL(input.watchUrl);
   if(watch.protocol!=='https:'||watch.username||watch.password||watch.port||!(['www.youtube.com','youtube.com','youtu.be','vimeo.com','www.vimeo.com','t.me','www.bitchute.com','bitchute.com'].includes(watch.hostname)||(input.platform==='Substack'&&/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.substack\.com$/.test(watch.hostname))||(input.platform==='Rutube'&&watch.hostname==='rutube.ru')))throw new Error('Invalid original link');
   if(input.platform==='Bitchute'){
