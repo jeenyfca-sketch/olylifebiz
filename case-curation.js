@@ -1669,10 +1669,19 @@ export const caseCuration = {
     }
   },
   "연전현상": {
-    "representatives": [],
+    "representatives": [
+      "OLY-444"
+    ],
     "retained": [],
-    "excerpts": {},
-    "labels": {},
+    "excerpts": {
+      "OLY-444": {
+        "start": 626.8,
+        "end": 730.71
+      }
+    },
+    "labels": {
+      "OLY-444": "본인 직접 체험 · 한국어 요약"
+    },
     "candidates": {
       "OLY-259": "원본과 전체 자막을 보관합니다. 직접 출연·본인 발언·분류 적합성·전후 맥락·중복을 비교해 다른 자료를 우선했습니다.",
       "OLY-268": "원본과 전체 자막을 보관합니다. 직접 출연·본인 발언·분류 적합성·전후 맥락·중복을 비교해 다른 자료를 우선했습니다.",
