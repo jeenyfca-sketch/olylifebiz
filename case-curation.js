@@ -1688,20 +1688,33 @@ export const caseCuration = {
   },
   "연전현상": {
     "representatives": [
+      "OLY-259",
       "OLY-444"
     ],
     "retained": [],
     "excerpts": {
+      "OLY-259": {
+        "start": 0,
+        "end": 30
+      },
       "OLY-444": {
         "start": 626.8,
         "end": 730.71
       }
     },
     "labels": {
+      "OLY-259": "혈액 현미경 전후 화면",
       "OLY-444": "본인 직접 체험 · 한국어 요약"
     },
+    "images": {
+      "OLY-259": {
+        "src": "./rouleaux-before-20261105.jpg",
+        "alt": "원본 영상에서 PEMF 세션 전이라고 표시한 적혈구 현미경 사진",
+        "caption": "사용 전 현미경 화면 · 원본 영상 00:08 · MyFrequencies 게시",
+        "sourceUrl": "https://vimeo.com/1116240148"
+      }
+    },
     "candidates": {
-      "OLY-259": "원본과 전체 자막을 보관합니다. 직접 출연·본인 발언·분류 적합성·전후 맥락·중복을 비교해 다른 자료를 우선했습니다.",
       "OLY-268": "원본과 전체 자막을 보관합니다. 직접 출연·본인 발언·분류 적합성·전후 맥락·중복을 비교해 다른 자료를 우선했습니다.",
       "OLY-345": "원본과 전체 자막을 보관합니다. 직접 출연·본인 발언·분류 적합성·전후 맥락·중복을 비교해 다른 자료를 우선했습니다.",
       "OLY-349": "원본과 전체 자막을 보관합니다. 직접 출연·본인 발언·분류 적합성·전후 맥락·중복을 비교해 다른 자료를 우선했습니다."
@@ -1762,7 +1775,12 @@ export const caseCuration = {
 export function getCaseCuration(id, category) {
   const policy=caseCuration[category];if(!policy)return null;
   const rank=policy.representatives.indexOf(id);
-  if(rank>=0)return {state:'representative',rank:rank+1,...(policy.labels?.[id]?{label:policy.labels[id]}:{}),...(policy.excerpts?.[id]?{excerpt:{...policy.excerpts[id]}}:{})};
+  if(rank>=0)return {
+    state:'representative',rank:rank+1,
+    ...(policy.labels?.[id]?{label:policy.labels[id]}:{}),
+    ...(policy.excerpts?.[id]?{excerpt:{...policy.excerpts[id]}}:{}),
+    ...(policy.images?.[id]?{image:{...policy.images[id]}}:{})
+  };
   if(policy.retained.includes(id))return {state:'retained',label:'등 자료'};
   return {state:'candidate',reason:policy.candidates[id]||'새 자료입니다. 대표 선정 검토가 필요합니다.'};
 }

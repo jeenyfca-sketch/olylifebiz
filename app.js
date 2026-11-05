@@ -9,7 +9,7 @@ function normalizeMeetingLink(raw) {
 (async () => {
 const backend = await window.olyCloudReady;
 const {normalizeCases} = await import(new URL('./case-catalog.js?v=categories5',document.baseURI));
-const {caseCuration,getCaseCuration,curateCases,curationCounts} = await import(new URL('./case-curation.js?v=20261025-priority-round20-v1',document.baseURI));
+const {caseCuration,getCaseCuration,curateCases,curationCounts} = await import(new URL('./case-curation.js?v=20261105-rouleaux-photo-v1',document.baseURI));
 const {sourceWatchUrl} = await import(new URL('./subtitle-data.js?v=20261025-edited-clip-v1',document.baseURI));
 const subtitleModule = await import(new URL('./subtitle-player.js?v=20261025-edited-clip-v1',document.baseURI));
 const {getMaterialVideos} = await import(new URL('./material-videos.js?v=1',document.baseURI));
@@ -310,6 +310,14 @@ function showCurationLabels(list) {
   const label=selected.state==='representative'?'대표 '+selected.rank+(selected.label?' · '+selected.label:''):selected.state==='retained'?'등 자료':'후보 자료';
   const badge=document.createElement('span');badge.className='ul-tag';badge.textContent=label;
   article.querySelector('h3').before(badge);
+  if(selected.image){
+   const figure=document.createElement('figure');figure.className='ul-case-photo';
+   const image=document.createElement('img');image.src=selected.image.src;image.alt=selected.image.alt;image.width=1920;image.height=1080;image.loading='lazy';
+   const caption=document.createElement('figcaption');caption.textContent=selected.image.caption;
+   const source=document.createElement('a');source.href=selected.image.sourceUrl;source.target='_blank';source.rel='noopener noreferrer';source.textContent='고화질 원본 영상 보기';
+   figure.append(image,caption,source);
+   article.querySelector('h3').after(figure);
+  }
   if(selected.excerpt){
    const originalLink=article.querySelector('a.ul-kakao-link');
    if(originalLink)originalLink.href=sourceWatchUrl(originalLink.href,selected.excerpt.start);
