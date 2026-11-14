@@ -38,6 +38,7 @@ export function prepareSubtitlePlayer(container,record){
 
 export function mountSubtitlePlayer(container,input,options={}){
   const data=selectSubtitleExcerpt(input,options.excerpt),isVisual=data.method==='source-reviewed-visual-summary',isCaptionTranslation=data.method==='source-visible-caption-translation',isTranslation=data.method==='source-segment-translation'||isCaptionTranslation,isSummary=data.method==='source-reviewed-summary'||isVisual;
+  const burnedIn=data.burnedInKorean===true&&isNativeSubtitle(data);
   styles();
   let prepared=options.prepared;if(prepared&&(!preparations.has(prepared)||prepared.caseId!==data.caseId||!prepared.video||data.platform!=='YouTube'||isNativeSubtitle(data)||options.mediaUrl||data.mediaUrl||!prepared.wrapper.isConnected||prepared.wrapper.parentElement!==container||prepared.video.source.pathname!==new URL(embedSource(data,location.origin)).pathname)){if(preparations.has(prepared))prepared.destroy();prepared=null;}
   let disposed=false,adapter=null,poll=null,providerTimer=null,cancelFrameLoad=null,played=false,current=data.start,active=null;
@@ -52,7 +53,9 @@ export function mountSubtitlePlayer(container,input,options={}){
   const modes=isSummary||data.originalAvailable===false?[['ko','한국어'],['off','끄기']]:[['ko','한국어'],['both','한국어 + 원문'],['off','끄기']];
   for(const[value,text]of modes){const option=node('option','',text);option.value=value;mode.append(option);}label.append(mode);
   const clock=node('output','os-clock',subtitleClock(data.start));clock.setAttribute('aria-label','영상 재생 시간');controls.append(label,clock);
+  if(burnedIn)label.remove();
   if(prepared){viewer.prepend(bar);viewer.append(captions,controls);}else viewer.append(bar,frame,captions,controls);
+  if(burnedIn)captions.remove();
   const status=node('p','os-status');status.setAttribute('role','status');status.hidden=true;
   const scope=node('p','os-scope',data.scope==='case-segment'?`${data.excerptOf?'대표 선정 구간':'해당 사례 구간'} · ${subtitleClock(data.start)}–${subtitleClock(data.end)}${data.excerptOf?' · '+subtitleClock(data.end-data.start):''}`:'');scope.hidden=data.scope!=='case-segment';
   if(options.selectionLabel&&data.excerptOf)scope.textContent+=' · '+options.selectionLabel;
@@ -79,7 +82,7 @@ export function mountSubtitlePlayer(container,input,options={}){
   }
   render(data.start);
   mode.addEventListener('change',()=>render(current));
-  function ready(){if(disposed)return;clearTimeout(providerTimer);wrapper.setAttribute('aria-busy','false');wrapper.dataset.playbackState='ready';for(const row of rows.values())row.button.disabled=false;message('재생 버튼을 누르면 영상 아래에 한국어 자막이 나옵니다.');options.onReady?.(data.caseId);}
+  function ready(){if(disposed)return;clearTimeout(providerTimer);wrapper.setAttribute('aria-busy','false');wrapper.dataset.playbackState='ready';for(const row of rows.values())row.button.disabled=false;message(burnedIn?'영상에 한국어 자막이 표시됩니다.':'재생 버튼을 누르면 영상 아래에 한국어 자막이 나옵니다.');options.onReady?.(data.caseId);}
   function error(text){if(disposed)return;clearTimeout(providerTimer);wrapper.setAttribute('aria-busy','false');wrapper.dataset.playbackState='error';message(text,true);details.open=true;options.onError?.({caseId:data.caseId,message:text});}
   const promise=(async()=>{
     try{
@@ -88,7 +91,7 @@ export function mountSubtitlePlayer(container,input,options={}){
         const video=node('video');video.controls=true;video.playsInline=true;video.preload='metadata';video.setAttribute('controlslist','nofullscreen noremoteplayback');video.disablePictureInPicture=true;
         video.muted=options.muted===true;video.src=data.platform==='Substack'?embedSource(data,location.origin):checkedMediaUrl(options.mediaUrl||data.mediaUrl,data.caseId,location.origin);frame.append(video);
         adapter=createNativeSubtitleAdapter(video,data,{onReady:()=>{if(!disposed)ready();},onTime:seconds=>render(seconds),
-          onPlay:()=>{if(disposed)return;played=true;wrapper.dataset.playbackState='playing';message('영상이 재생 중입니다. 영상 아래에서 한국어 자막을 확인하세요.');},
+          onPlay:()=>{if(disposed)return;played=true;wrapper.dataset.playbackState='playing';message(burnedIn?'':'영상이 재생 중입니다. 영상 아래에서 한국어 자막을 확인하세요.');},
           onPause:()=>{if(!disposed&&played)wrapper.dataset.playbackState='paused';},onEnd:()=>{if(!disposed)wrapper.dataset.playbackState='ended';},
           onError:()=>error('영상을 불러오지 못했습니다. 잠시 후 다시 열어주세요.')});
         return;

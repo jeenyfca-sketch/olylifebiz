@@ -1467,18 +1467,152 @@ export const caseCuration = {
   }
 };
 
-export function getCaseCuration(id, category) {
+const editedSelections = {
+  "뇌·두통": [
+    "OLY-602"
+  ],
+  "기억·인지": [
+    "OLY-605",
+    "OLY-606",
+    "OLY-608"
+  ],
+  "눈·시야": [
+    "OLY-604",
+    "OLY-610"
+  ],
+  "얼굴·귀·코·턱": [
+    "OLY-609"
+  ],
+  "어깨·목": [
+    "OLY-600",
+    "OLY-603",
+    "OLY-611",
+    "OLY-612",
+    "OLY-641"
+  ],
+  "손·팔": [
+    "OLY-613",
+    "OLY-614"
+  ],
+  "허리·등": [
+    "OLY-615",
+    "OLY-616",
+    "OLY-617",
+    "OLY-618",
+    "OLY-619"
+  ],
+  "고관절": [
+    "OLY-605",
+    "OLY-620",
+    "OLY-621",
+    "OLY-622"
+  ],
+  "다리": [
+    "OLY-613",
+    "OLY-623",
+    "OLY-624",
+    "OLY-625"
+  ],
+  "무릎": [
+    "OLY-615",
+    "OLY-617",
+    "OLY-626",
+    "OLY-627",
+    "OLY-628",
+    "OLY-629"
+  ],
+  "파킨슨 관련": [],
+  "신경·저림·경련": [
+    "OLY-630"
+  ],
+  "수면": [
+    "OLY-607",
+    "OLY-631",
+    "OLY-632",
+    "OLY-640"
+  ],
+  "기분·활력": [
+    "OLY-605",
+    "OLY-608"
+  ],
+  "온감·냉감": [
+    "OLY-605",
+    "OLY-633"
+  ],
+  "순환·붓기": [
+    "OLY-628",
+    "OLY-634",
+    "OLY-635"
+  ],
+  "혈압·혈당·대사": [
+    "OLY-636"
+  ],
+  "혈액검사·수치": [
+    "OLY-636"
+  ],
+  "소화·배변": [
+    "OLY-637"
+  ],
+  "신장·방광": [],
+  "비뇨·야간뇨": [
+    "OLY-632",
+    "OLY-639",
+    "OLY-640"
+  ],
+  "정력·성기능": [],
+  "여성 요실금": [],
+  "생리 관련": [
+    "OLY-638"
+  ],
+  "피부": [],
+  "다이어트": [],
+  "운동·회복": [
+    "OLY-635"
+  ],
+  "호흡·기침": [
+    "OLY-641"
+  ],
+  "스트레스": [
+    "OLY-642"
+  ],
+  "류마티스": [
+    "OLY-600",
+    "OLY-601"
+  ],
+  "관절·통증": [
+    "OLY-608",
+    "OLY-633",
+    "OLY-643"
+  ],
+  "연전현상": [],
+  "사용감·불편": [
+    "OLY-619",
+    "OLY-633"
+  ]
+};
+
+// Keep the source catalog and use the uploaded edits for the current representative view.
+export const editedCaseCuration = Object.fromEntries(Object.entries(caseCuration).map(([topic, source]) => {
+  const representatives=editedSelections[topic];
+  const labels=Object.fromEntries(representatives.map(id=>[id,'40초 편집본']));
+  const archived=Object.fromEntries([...source.representatives,...source.retained].map(id=>[id,'원본 자료로 보관합니다.']));
+  return [topic,{...source,representatives,labels,excerpts:{},retained:[],candidates:{...source.candidates,...archived}}];
+}));
+
+export function getCaseCuration(id, category, catalog=caseCuration) {
   if(category===''){
-    for(const topic of Object.keys(caseCuration)){
-      const selection=getCaseCuration(id,topic);
+    for(const topic of Object.keys(catalog)){
+      const selection=getCaseCuration(id,topic,catalog);
       if(selection.state==='representative')return selection;
     }
     return {state:'candidate',reason:'대표 영상으로 선정된 구간이 없습니다.'};
   }
-  const policy=caseCuration[category];if(!policy)return null;
+  const policy=catalog[category];
+  if(!policy)return catalog===caseCuration?null:{state:'candidate',reason:'40초 편집본이 없는 분류입니다.'};
   const rank=policy.representatives.indexOf(id);
   if(rank>=0)return {
     state:'representative',rank:rank+1,
+    ...(catalog===editedCaseCuration?{usesPrivateEdit:true}:{}),
     ...(policy.labels?.[id]?{label:policy.labels[id]}:{}),
     ...(policy.excerpts?.[id]?{excerpt:{...policy.excerpts[id]}}:{}),
     ...(policy.images?.[id]?{image:{...policy.images[id]}}:{})
@@ -1490,22 +1624,22 @@ export function getCaseCuration(id, category) {
   };
 }
 
-export function curateCases(items, category, mode='representative', administrator=false) {
-  if(category!==''&&!caseCuration[category])return [...items];
+export function curateCases(items, category, mode='representative', administrator=false, catalog=caseCuration) {
+  if(category!==''&&!catalog[category]&&catalog===caseCuration)return [...items];
   const view=administrator&&['candidate','all'].includes(mode)?mode:'representative';
   return items.filter(item=>{
-    const state=getCaseCuration(item.id,category).state;
+    const state=getCaseCuration(item.id,category,catalog).state;
     return view==='all'||(view==='candidate'?state==='candidate':state!=='candidate');
   }).sort((a,b)=>{
-    const x=getCaseCuration(a.id,category),y=getCaseCuration(b.id,category);
+    const x=getCaseCuration(a.id,category,catalog),y=getCaseCuration(b.id,category,catalog);
     const position=s=>s.state==='representative'?s.rank:s.state==='retained'?100:200;
     return position(x)-position(y);
   });
 }
 
-export function curationCounts(items, category) {
+export function curationCounts(items, category, catalog=caseCuration) {
   const result={representative:0,candidate:0,retained:0};
-  if(category!==''&&!caseCuration[category])return null;
-  for(const item of items)result[getCaseCuration(item.id,category).state]++;
+  if(category!==''&&!catalog[category]&&catalog===caseCuration)return null;
+  for(const item of items)result[getCaseCuration(item.id,category,catalog).state]++;
   return result;
 }
