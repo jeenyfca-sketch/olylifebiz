@@ -9,7 +9,7 @@ function normalizeMeetingLink(raw) {
 (async () => {
 const backend = await window.olyCloudReady;
 const {normalizeCases} = await import(new URL('./case-catalog.js?v=categories5',document.baseURI));
-const {caseCuration,getCaseCuration,curateCases,curationCounts} = await import(new URL('./case-curation.js?v=20261105-rouleaux-photo-v1',document.baseURI));
+const {caseCuration,getCaseCuration,curateCases,curationCounts} = await import(new URL('./case-curation.js?v=20261115-90s',document.baseURI));
 const {sourceWatchUrl} = await import(new URL('./subtitle-data.js?v=20261025-edited-clip-v1',document.baseURI));
 const subtitleModule = await import(new URL('./subtitle-player.js?v=20261025-edited-clip-v1',document.baseURI));
 const {getMaterialVideos} = await import(new URL('./material-videos.js?v=1',document.baseURI));
@@ -297,14 +297,13 @@ function renderExperiences(){
  $('#ul-case-curation').hidden=!selection;
  $('#ul-case-curation-label').hidden=!auth.authenticated;
  $('#ul-case-curation-view').value=auth.authenticated?caseCurationView:'representative';
- $('#ul-case-curation-summary').textContent=selection?(locale==='ko'?'대표 '+selection.representative+'건'+(selection.retained?' · 등 자료 '+selection.retained+'건':'')+(auth.authenticated?' · 후보 '+selection.candidate+'건 · 후보는 삭제하지 않고 보관합니다.':''):selection.representative+' selected'+(auth.authenticated?' · '+selection.candidate+' candidates':'')):'';
+ $('#ul-case-curation-summary').textContent=selection?(locale==='ko'?'대표 구간 1분 30초 이내 · '+selection.representative+'건'+(auth.authenticated?' · 후보 '+selection.candidate+'건':''):selection.representative+' selected · up to 90 seconds'+(auth.authenticated?' · '+selection.candidate+' candidates':'')):'';
  const list=curateCases(matching,experienceCategory,caseCurationView,auth.authenticated);
  $('#ul-case-count').textContent=locale==='ko'?'사례 '+list.length+'건 · 영상 '+list.filter(x=>x.media_type==='video').length+'건 · 글 '+list.filter(x=>x.media_type!=='video').length+'건':list.length+' cases';
  $('#ul-experience-list').innerHTML=experiencesLoading?'<p class="ul-sub">'+t('사례를 불러오는 중입니다.')+'</p>':experiencesFailed?'<p class="ul-sub">'+t('사례를 불러오지 못했습니다.')+'</p>':list.length?list.map(x=>'<article class="ul-item"><span class="ul-tag">'+esc([x.country,x.language].filter(Boolean).join(' · '))+'</span><h3>'+esc(x.title)+'</h3>'+(auth.authenticated?'<p class="ul-meta">'+esc(x.id)+' · '+esc(x.visibility==='public'?'공개':'관리자 전용')+'</p>':'')+(x.summary?'<span class="ul-tag">'+t('한국어 요약')+'</span><p class="ul-case-summary">'+esc(x.summary)+'</p>':'')+(x.video_url?(auth.authenticated&&/^OLY-\d{3}$/.test(x.id)?'<button type="button" data-case-subtitle="'+esc(x.id)+'">한국어 자막영상</button>':'')+'<a class="ul-kakao-link" href="'+esc(x.video_url)+'" target="_blank" rel="noopener noreferrer">'+t('원문 영상')+'</a>':'')+(x.url?'<button type="button" data-copy-experience="'+esc(x.id)+'">'+t('원문 링크복사')+'</button>':'')+(auth.authenticated?'<p class="ul-meta">'+esc(x.review_status)+'</p><button type="button" data-case-edit="'+esc(x.id)+'">사례 수정 · 공개 설정</button>':'')+'</article>').join(''):'<p class="ul-sub">'+t(experiences.length?'조건에 맞는 사례가 없습니다.':'등록된 사례가 없습니다.')+'</p>';
  showCurationLabels(list);
 }
 function showCurationLabels(list) {
- if(!experienceCategory)return;
  $('#ul-experience-list').querySelectorAll('article').forEach((article,index)=>{
   const selected=getCaseCuration(list[index].id,experienceCategory);if(!selected)return;
   const label=selected.state==='representative'?'대표 '+selected.rank+(selected.label?' · '+selected.label:''):selected.state==='retained'?'등 자료':'후보 자료';
@@ -323,7 +322,7 @@ function showCurationLabels(list) {
    if(originalLink)originalLink.href=sourceWatchUrl(originalLink.href,selected.excerpt.start);
    const clock=value=>{const seconds=Math.floor(value);return String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');};
    const range=document.createElement('p');range.className='ul-sub';
-   range.textContent='이 분류의 선정 구간: '+clock(selected.excerpt.start)+'–'+clock(selected.excerpt.end)+' · 한국어 자막영상에서 해당 구간의 대본을 확인할 수 있습니다.';
+   range.textContent='선정 구간 '+clock(selected.excerpt.start)+'–'+clock(selected.excerpt.end)+' ('+Math.ceil(selected.excerpt.end-selected.excerpt.start)+'초)'+(auth.authenticated?' · 한국어 자막영상에서 볼 수 있습니다.':'');
    article.querySelector('h3').after(range);
   }
   if(auth.authenticated&&selected.state==='candidate'){
