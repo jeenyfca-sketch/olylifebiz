@@ -100,6 +100,13 @@
    </form>
    <p id="ul-case-notice" role="status"></p>
    <label>공개 범위 필터<select id="ul-case-visibility"><option value="">전체</option><option value="admin">관리자 전용</option><option value="public">공개</option></select></label>
+   <details class="ul-study-settings"><summary>팀 학습 열람 권한</summary>
+     <form id="ul-study-member-form">
+       <label>팀원 로그인 이메일<input name="email" type="email" maxlength="254" required></label>
+       <label>열람 권한<select name="access"><option value="allow">허용</option><option value="revoke">해제</option></select></label>
+       <button type="submit">권한 저장</button><p id="ul-study-member-notice" role="status"></p>
+     </form>
+   </details>
  </div>
  <div id="ul-experience-categories" class="ul-category-filter" role="group" aria-label="사례 분류"></div>
  <div id="ul-case-curation" hidden>
@@ -119,6 +126,20 @@
  <form id="ul-auth-form"><label id="ul-email-label" hidden>이메일<input name="email" type="email" autocomplete="username"></label><label>비밀번호<input name="password" type="password" minlength="10" maxlength="128" autocomplete="current-password" required></label>
  <button type="submit" class="ul-primary" id="ul-auth-submit">로그인</button></form>
  <div id="ul-auth-notice" role="alert"></div></div>
+ <div data-panel="study-pledge" hidden>
+   <h2>개인 학습 이용 서약</h2>
+   <ul class="ul-study-terms">
+     <li>하나넥서스 체험사례를 팀 내 개인 학습에만 이용하겠습니다.</li>
+     <li>한국어 자막 편집본을 내려받거나 녹화·복제·재편집·재배포하지 않겠습니다.</li>
+     <li>다른 사람에게 사례를 소개할 때에는 영상 아래의 원본 링크를 전달하겠습니다.</li>
+   </ul>
+   <p class="ul-sub">서약 확인을 위해 로그인 계정, 서약 버전, 동의 시각을 기록합니다.</p>
+   <form id="ul-study-pledge-form">
+     <label class="ul-study-agreement"><input name="accepted" type="checkbox" required>위 내용을 읽었으며 동의합니다.</label>
+     <button class="ul-primary" type="submit">동의하고 체험사례 보기</button>
+     <p id="ul-study-pledge-notice" role="status"></p>
+   </form>
+ </div>
  <div data-panel="admin" hidden>
           <div class="ul-kicker">관리자 전용</div><h2>자료 관리</h2><p class="ul-sub">자료를 등록하고 내용을 수정합니다.</p><button id="ul-import-local" type="button" hidden>기존 자료·미팅 가져오기</button><p id="ul-import-notice" role="status"></p>
           
@@ -163,6 +184,13 @@
 #ulilife-preview .ul-stage {max-width:430px;margin:0 auto;padding:0 12px}
 #ulilife-preview[data-view="cases"] .ul-stage {max-width:736px}
 #ulilife-preview[data-view="cases"] .ul-brand-grid {max-width:400px;margin-inline:auto}
+html[data-hana-view="study"] #ulilife-preview :is(.ul-app-nav,.ul-contact-actions,[data-panel="home"]) {display:none}
+#ulilife-preview .ul-study-terms {padding-inline-start:22px;line-height:1.65}
+#ulilife-preview .ul-study-terms li+li {margin-block-start:8px}
+#ulilife-preview label.ul-study-agreement {display:flex;align-items:center;gap:8px}
+#ulilife-preview .ul-study-agreement input {width:20px;height:20px;accent-color:var(--ul-primary)}
+#ulilife-preview .ul-study-settings {margin-block:12px}
+#ulilife-preview .ul-study-settings summary {cursor:pointer}
 #ulilife-preview .ul-switch {display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
 #ulilife-preview button {font:inherit;cursor:inherit;min-height:44px;border:1px solid var(--ul-line);border-radius:12px;padding:10px 14px;background:var(--ul-paper);color:var(--ul-text)}
 #ulilife-preview .ul-switch button {flex:1}
@@ -283,4 +311,4 @@ html,body {margin:0;background:#F4F7F8}
 #ulilife-preview #ul-kakao-qr-panel {color:var(--ul-text)}
 </style>
 
-<script src="./cloud.js?v=ba4572cfc347"></script><script src="./app.js?v=6eec198344b6"></script></body></html>
+<script src="./cloud.js?v=a0ccb0bda671"></script><script src="./app.js?v=251d6f30fd27"></script></body></html>

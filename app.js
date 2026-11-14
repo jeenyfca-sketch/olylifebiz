@@ -11,22 +11,27 @@ const backend = await window.olyCloudReady;
 const {normalizeCases} = await import(new URL('./case-catalog.js?v=categories5',document.baseURI));
 const {editedCaseCuration:caseCuration,getCaseCuration,curateCases,curationCounts} = await import(new URL('./case-curation.js?v=20261115-40s',document.baseURI));
 const {sourceWatchUrl} = await import(new URL('./subtitle-data.js?v=20261025-edited-clip-v1',document.baseURI));
-const subtitleModule = await import(new URL('./subtitle-player.js?v=20261115-burned-ko',document.baseURI));
+const subtitleModule = await import(new URL('./subtitle-player.js?v=20261115-study-view',document.baseURI));
 const {getMaterialVideos} = await import(new URL('./material-videos.js?v=1',document.baseURI));
 const {groupMeetings} = await import(new URL('./meeting-schedule.js?v=1',document.baseURI));
 const page = new URL(location.href);
 const casesReturnKey = 'olylink-cases-return';
 let returningToCases = false;
+let returningToStudy = false;
 try {
-  const requestedAt = Number(sessionStorage.getItem(casesReturnKey));
+  const [storedTime,mode] = (sessionStorage.getItem(casesReturnKey)||'').split(':');
+  const requestedAt = Number(storedTime);
   returningToCases = requestedAt > 0 && Date.now() - requestedAt < 10 * 60 * 1000;
+  returningToStudy = returningToCases && mode === 'study';
   sessionStorage.removeItem(casesReturnKey);
 } catch {}
-const adminMode = page.searchParams.get('admin') === '1';
-const casesOnly = adminMode && (page.searchParams.get('view') === 'cases' || returningToCases);
+const teamPage = document.documentElement.dataset.hanaView === 'study' || (returningToStudy&&page.searchParams.get('admin')==='1');
+const adminMode = teamPage || page.searchParams.get('admin') === '1';
+const casesOnly = teamPage || (adminMode && (page.searchParams.get('view') === 'cases' || returningToCases));
 const root=document.getElementById('ulilife-preview'), $=s=>root.querySelector(s);
 if (casesOnly) {
-  if (page.searchParams.get('view') !== 'cases') {
+  if(teamPage&&returningToStudy)history.replaceState(history.state,'',new URL('./cases.html',page).href);
+  else if (!teamPage&&page.searchParams.get('view') !== 'cases') {
     page.searchParams.set('view','cases');
     history.replaceState(history.state,'',page.href);
   }
@@ -34,7 +39,7 @@ if (casesOnly) {
   $('.ul-app-nav').hidden=true;
   $('.ul-contact-actions').hidden=true;
   $('.ul-phone').setAttribute('aria-label','하나 넥서스 글로벌 체험 사례');
-  document.title='글로벌 체험 사례 · 하나 넥서스';
+  document.title=teamPage?'하나넥서스 · 글로벌 체험 사례':'글로벌 체험 사례 · 하나 넥서스';
 }
 const inquiryUrl = $('.ul-direct-inquiry').href;
 const translations={
@@ -215,13 +220,15 @@ let experiences=[],experiencesLoaded=false,experiencesLoading=false,experiencesF
 let caseCurationView='representative';
 const defaultExperienceCategories=Object.keys(caseCuration);
 let materials=[],meetings=[],auth={initialized:!!backend,authenticated:false,signedIn:false},section='home',editId=null,meetingEditId=null,detailId=null,authRequest=0;
+let studyAccess={allowed:false,accepted:false};
+const canViewStudy=()=>teamPage&&studyAccess.accepted;
 let preparedPublishController=null;
 const textNodes=[],attrs=[];
 const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
 while(walker.nextNode()){const node=walker.currentNode;if(node.parentElement.closest('script,style,option'))continue;const key=node.textContent.trim();if(translations[key])textNodes.push({node,key});}
 root.querySelectorAll('[placeholder],[aria-label]').forEach(el=>{for(const name of ['placeholder','aria-label']){const key=el.getAttribute(name);if(translations[key])attrs.push({el,name,key});}});
 async function api(url,body){if(backend)return backend.api(url,body);const res=await fetch(url,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{});const data=await res.json();if(!res.ok){const error=new Error(data.error||'Request failed');error.status=res.status;throw error;}return data;}
-function show(value){if(casesOnly&&value!=='auth')value=auth.authenticated?'experiences':'auth';if(value==='experiences'&&!(auth.authenticated||experiences.some(x=>x.visibility==='public')))value=adminMode?'auth':'home';if(value==='experiences')loadExperiences();if(!adminMode&&(['admin','meeting-admin'].includes(value)||(value==='auth'&&!auth.googleEnabled)))value='library';section=value;if(section==='meetings'&&auth.authenticated)section='meeting-admin';if(['admin','meeting-admin'].includes(section)&&!auth.authenticated)section='auth';root.querySelectorAll('[data-panel]').forEach(p=>p.hidden=p.dataset.panel!==section);root.querySelectorAll('.ul-app-nav [data-section]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.section===section)));}
+function show(value){if(teamPage&&value!=='auth')value=canViewStudy()?'experiences':studyAccess.allowed?'study-pledge':'auth';else if(casesOnly&&value!=='auth')value=auth.authenticated?'experiences':'auth';if(value==='experiences'&&!(canViewStudy()||auth.authenticated||experiences.some(x=>x.visibility==='public')))value=adminMode?'auth':'home';if(value==='experiences')loadExperiences();if(!adminMode&&(['admin','meeting-admin'].includes(value)||(value==='auth'&&!auth.googleEnabled)))value='library';section=value;if(section==='meetings'&&auth.authenticated)section='meeting-admin';if(['admin','meeting-admin'].includes(section)&&!auth.authenticated)section='auth';root.querySelectorAll('[data-panel]').forEach(p=>p.hidden=p.dataset.panel!==section);root.querySelectorAll('.ul-app-nav [data-section]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.section===section)));}
 function applyLocale(){
 $('#ul-kakao-qr-toggle').textContent=t($('#ul-kakao-qr-panel').hidden?'QR 보기':'QR 닫기');
 $('#ul-kakao-qr-panel img').alt=t('카카오톡 문의 QR코드');
@@ -233,12 +240,13 @@ const preparedPublish=$('#ul-prepared-publish');if(preparedPublish){preparedPubl
 root.lang=locale;document.documentElement.lang=locale;$('#ul-locale').value=locale;textNodes.forEach(({node,key})=>node.textContent=t(key));attrs.forEach(({el,name,key})=>el.setAttribute(name,t(key)));$('#ul-auth-title').textContent=t(auth.initialized?'관리자 로그인':'관리자 비밀번호 설정');$('#ul-auth-submit').textContent=t(auth.initialized?'로그인':'설정하고 시작하기');$('#ul-auth-description').textContent=t(auth.initialized?'설정한 관리자 비밀번호를 입력하세요.':'비밀번호를 10자 이상으로 정하세요. 이 컴퓨터의 관리자 계정에만 사용됩니다.');$('#ul-auth-form').elements.password.autocomplete=auth.initialized?'current-password':'new-password';$('#ul-form-title').textContent=t(editId?'자료 수정':'새 자료 등록');$('#ul-save').textContent=t(editId?'저장하기':'등록하기');$('#ul-file-label').textContent=t(editId?'등록된 PDF를 유지합니다. 새 파일을 선택하면 교체됩니다.':'PDF 최대 15MB · 이 컴퓨터에 저장합니다.');if(backend){$('#ul-auth-description').textContent=locale==='ko'?'수파베이스에서 만든 관리자 이메일과 비밀번호를 입력하세요.':'Sign in with your administrator email and password.';$('#ul-file-label').textContent=locale==='ko'?'PDF 최대 15MB':'PDF · Max 15MB';}
 $('#ul-auth-form').hidden=!adminMode;
 if(!adminMode){$('#ul-auth-title').textContent=t('로그인');$('#ul-auth-description').textContent=t('구글 계정으로 간편하게 로그인하세요.');}
+if(teamPage){$('#ul-auth-title').textContent='팀 학습 로그인';$('#ul-auth-description').textContent='열람 권한이 등록된 이메일로 로그인해 주세요.';}
 $('#ul-google-login').hidden=!backend||!auth.googleEnabled;
 $('#ul-google-login').disabled=!auth.googleSupported;
 $('#ul-google-help').hidden=!backend||!auth.googleEnabled||auth.googleSupported;
 $('#ul-google-help').textContent=t('구글 로그인을 사용하려면 최신 앱으로 업데이트하거나 웹 브라우저에서 열어 주세요.');
 $('#ul-admin-nav').hidden=!auth.authenticated;
-$('#ul-login').hidden=!adminMode||auth.authenticated;
+$('#ul-login').hidden=teamPage||!adminMode||auth.authenticated;
 $('#ul-user-login').hidden=adminMode||!backend||!auth.googleEnabled||auth.signedIn;
 $('#ul-logout').hidden=!(auth.authenticated||auth.signedIn);
 $('footer').hidden=$('#ul-login').hidden&&$('#ul-user-login').hidden&&$('#ul-logout').hidden;
@@ -262,7 +270,7 @@ async function detail(id,toggle=false){
  if(videos.length)panel.innerHTML+='<section class="ul-material-videos" aria-label="비지니스 플랜 영상"><h4>비지니스 플랜 · 원본영상 '+videos.length+'개</h4><p class="ul-meta">유튜브 설정 → 자막 → 자동번역 → 한국어로 시청할 수 있습니다.</p>'+videos.map(v=>'<article class="ul-material-video"><span class="ul-tag">'+esc(v.channel)+'</span><p class="ul-material-original">'+esc(v.title)+'</p><span class="ul-meta">한국어 제목 번역</span><h4>'+esc(v.titleKo)+'</h4><p>'+esc(v.summaryKo)+'</p><p class="ul-meta">게시자 설명 기준 요약 · 영상 전체 발언 번역은 아닙니다.</p><a class="ul-kakao-link" href="'+esc(v.url)+'" target="_blank" rel="noopener noreferrer">원본 영상 보기 ↗</a></article>').join('')+'</section>';
  panel.innerHTML+='<div class="ul-material-inquiry"><p>'+t('자료를 보고 궁금한 점이 생기셨나요?')+'</p><a class="ul-kakao-link" href="'+esc(inquiryUrl)+'" target="_blank" rel="noopener noreferrer">'+t('이 자료 문의하기')+'</a></div>';
 }
-function clearCases(){closeSubtitles();++caseRequest;experiences=[];experiencesLoaded=false;experiencesLoading=false;$('#ul-case-form').reset();$('#ul-case-form').hidden=true;$('#ul-experience-list').replaceChildren();$('#ul-case-tools').hidden=true;$('#ul-cases-nav').hidden=true;$('#ul-home-cases').hidden=true;}
+function clearCases(){closeSubtitles();++caseRequest;studyAccess={allowed:false,accepted:false};experiences=[];experiencesLoaded=false;experiencesLoading=false;$('#ul-case-form').reset();$('#ul-case-form').hidden=true;$('#ul-experience-list').replaceChildren();$('#ul-case-tools').hidden=true;$('#ul-cases-nav').hidden=true;$('#ul-home-cases').hidden=true;}
 async function refresh(){
  const request=++authRequest;
  clearCases();
@@ -271,6 +279,14 @@ async function refresh(){
  [auth,materials,meetings]=results;
  if(!adminMode)auth.authenticated=false;
  applyLocale();
+ if(teamPage){
+  const access=auth.signedIn?await api('/api/experiences/study/access'):studyAccess;
+  if(request!==authRequest)return;
+  studyAccess=access;
+  $('#ul-auth-notice').textContent=auth.loginError||(auth.signedIn&&!access.allowed?'이 계정의 팀 학습 열람 권한이 등록되지 않았습니다.':'');
+  show(auth.loginError?'auth':'experiences');
+  return;
+ }
  if(auth.loginError){$('#ul-auth-notice').textContent=t(auth.loginError);show('auth');}
  else if(adminMode&&auth.signedIn&&!auth.authenticated){$('#ul-auth-notice').textContent=t('이 계정에는 관리자 권한이 없습니다.');}
  if(casesOnly&&!auth.authenticated)return;
@@ -285,8 +301,32 @@ $('#ul-kakao-qr-toggle').addEventListener('click',()=>{const panel=$('#ul-kakao-
 $('#ul-search').addEventListener('input',()=>{render();detailId=null;$('#ul-detail').hidden=true;});
 function reset(){editId=null;$('#ul-form').reset();$('#ul-cancel').hidden=true;applyLocale();}
 $('#ul-cancel').addEventListener('click',reset);
-$('#ul-auth-form').addEventListener('submit',async e=>{e.preventDefault();const button=$('#ul-auth-submit');button.disabled=true;$('#ul-auth-notice').textContent='';try {await api(auth.initialized?'/api/auth/login':'/api/auth/setup',{email:e.target.elements.email.value,password:e.target.elements.password.value});e.target.reset();await refresh();show('admin');}catch(error){$('#ul-auth-notice').textContent=t(error.message);}finally{button.disabled=false;}});
-$('#ul-google-login').addEventListener('click',async()=>{const button=$('#ul-google-login');button.disabled=true;$('#ul-auth-notice').textContent='';try{const result=await api('/api/auth/google',{});if(casesOnly)try{sessionStorage.setItem(casesReturnKey,String(Date.now()));}catch{}location.assign(result.url);}catch(error){$('#ul-auth-notice').textContent=t(error.message);button.disabled=!auth.googleSupported;}});
+$('#ul-auth-form').addEventListener('submit',async e=>{e.preventDefault();const button=$('#ul-auth-submit');button.disabled=true;$('#ul-auth-notice').textContent='';try {await api(teamPage?'/api/experiences/study/login':auth.initialized?'/api/auth/login':'/api/auth/setup',{email:e.target.elements.email.value,password:e.target.elements.password.value});e.target.reset();await refresh();if(!teamPage)show('admin');}catch(error){$('#ul-auth-notice').textContent=t(error.message);}finally{button.disabled=false;}});
+$('#ul-google-login').addEventListener('click',async()=>{const button=$('#ul-google-login');button.disabled=true;$('#ul-auth-notice').textContent='';try{const result=await api('/api/auth/google',{});if(casesOnly)try{sessionStorage.setItem(casesReturnKey,Date.now()+(teamPage?':study':':admin'));}catch{}location.assign(result.url);}catch(error){$('#ul-auth-notice').textContent=t(error.message);button.disabled=!auth.googleSupported;}});
+$('#ul-study-pledge-form').addEventListener('submit',async event=>{
+ event.preventDefault();
+ if(!teamPage||!studyAccess.allowed||!event.target.elements.accepted.checked)return;
+ const button=event.target.querySelector('button'),notice=$('#ul-study-pledge-notice'),request=authRequest;
+ button.disabled=true;notice.textContent='';
+ try{
+  const access=await api('/api/experiences/study/pledge',{accepted:true});
+  if(request!==authRequest)return;
+  if(!access.accepted)throw new Error('동의를 기록하지 못했습니다. 다시 시도해 주세요.');
+  studyAccess=access;event.target.reset();show('experiences');
+ }catch(error){if(request===authRequest)notice.textContent=error.message;}
+ finally{button.disabled=false;}
+});
+$('#ul-study-member-form').addEventListener('submit',async event=>{
+ event.preventDefault();
+ if(!backend||!auth.authenticated||teamPage)return;
+ const form=event.target,button=form.querySelector('button'),notice=$('#ul-study-member-notice');
+ button.disabled=true;notice.textContent='';
+ try{
+  const {active}=await api('/api/experiences/study/member',{email:form.elements.email.value,active:form.elements.access.value==='allow'});
+  notice.textContent=active?'팀 학습 열람 권한을 등록했습니다.':'팀 학습 열람 권한을 해제했습니다.';
+ }catch(error){notice.textContent=error.message;}
+ finally{button.disabled=false;}
+});
 $('#ul-logout').addEventListener('click',async()=>{++authRequest;clearCases();auth.authenticated=false;auth.signedIn=false;auth.user=null;applyLocale();show('home');try{await api('/api/auth/logout',{});await refresh();reset();show('home');}catch(error){$('#ul-notice').textContent=t(error.message);}});
 function fileBase64(file){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onerror=()=>reject(new Error('Could not read file'));reader.onload=()=>resolve(String(reader.result).split(',')[1]);reader.readAsDataURL(file);});}
 $('#ul-form').addEventListener('submit',async e=>{e.preventDefault();const button=$('#ul-save'),form=e.target,file=form.elements.file.files[0];$('#ul-notice').textContent='';button.disabled=true;button.textContent=t('저장 중…');try{if(!editId&&!file)throw new Error('파일을 선택하세요.');if(file&&(!/\.pdf$/i.test(file.name)))throw new Error('PDF 파일만 등록할 수 있습니다.');if(file&&file.size>15*1024*1024)throw new Error('PDF 최대 크기는 15MB입니다.');const input={};for(const key of ['title','language','description','source'])input[key]=form.elements.namedItem(key).value;if(editId)input.id=editId;if(file){input.filename=file.name;input.fileBase64=await fileBase64(file);}await api('/api/materials',input);detailId=null;$('#ul-detail').hidden=true;await refresh();reset();$('#ul-notice').textContent=t('자료를 저장했습니다.');}catch(error){if(error.status===401){auth.authenticated=false;applyLocale();show('auth');$('#ul-auth-notice').textContent=t(error.message);}else $('#ul-notice').textContent=t(error.message);}finally{button.disabled=false;button.textContent=t(editId?'저장하기':'등록하기');}});
@@ -310,15 +350,16 @@ meetingLinkInput.addEventListener('paste',e=>{const pasted=e.clipboardData?.getD
 root.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.meetingEdit){const x=meetings.find(x=>x.id===b.dataset.meetingEdit);meetingEditId=x.id;const form=$('#ul-meeting-form');for(const key of ['title','language','link'])form.elements.namedItem(key).value=x[key];form.elements.starts.value=new Date(new Date(x.starts).getTime()+9*3600000).toISOString().slice(0,16);$('#ul-meeting-cancel').hidden=false;$('#ul-meeting-notice').textContent='';renderMeetings();form.scrollIntoView({block:'start',behavior:'smooth'});}if(b.id==='ul-meeting-cancel')resetMeeting();if(b.id==='ul-logout')resetMeeting();});
 $('#ul-meeting-form').addEventListener('submit',async e=>{e.preventDefault();const form=e.target,button=$('#ul-meeting-save');button.disabled=true;button.textContent=t('저장 중…');$('#ul-meeting-notice').textContent='';try{const input={};for(const key of ['title','starts','language','link'])input[key]=form.elements.namedItem(key).value;input.link=normalizeMeetingLink(input.link);form.elements.link.value=input.link;if(meetingEditId)input.id=meetingEditId;await api('/api/meetings',input);await refresh();resetMeeting();$('#ul-meeting-notice').textContent=t('미팅을 저장했습니다.');}catch(error){if(error.status===401){auth.authenticated=false;applyLocale();show('auth');$('#ul-auth-notice').textContent=t(error.message);}else $('#ul-meeting-notice').textContent=t(error.message);}finally{button.disabled=false;button.textContent=t(meetingEditId?'저장하기':'등록하기');}});
 async function loadExperiences(){
- if(experiencesLoaded||experiencesLoading)return;
+ if(experiencesLoaded||experiencesLoading||(teamPage&&!canViewStudy()))return;
  const request=++caseRequest;
  experiencesLoading=true;experiencesFailed=false;renderExperiences();
- try{const data=await api(auth.authenticated?'/api/experiences/admin':'/api/experiences');if(request!==caseRequest)return;if(!Array.isArray(data))throw new Error('catalog');experiences=normalizeCases(data);experiencesLoaded=true;
+ try{const data=await api(teamPage?'/api/experiences/study':auth.authenticated?'/api/experiences/admin':'/api/experiences');if(request!==caseRequest)return;if(!Array.isArray(data))throw new Error('catalog');experiences=normalizeCases(data);experiencesLoaded=true;
  }catch{if(request===caseRequest){experiences=[];experiencesFailed=true;}}finally{if(request===caseRequest){experiencesLoading=false;renderExperiences();}}
 }
 function renderExperiences(){
- const available=auth.authenticated||experiences.some(x=>x.visibility==='public');
- $('#ul-cases-nav').hidden=!available;$('#ul-home-cases').hidden=!available;$('#ul-case-tools').hidden=!auth.authenticated;
+ const staff=auth.authenticated&&!teamPage,available=staff||canViewStudy()||experiences.some(x=>x.visibility==='public');
+ $('#ul-cases-nav').hidden=!available;$('#ul-home-cases').hidden=!available;$('#ul-case-tools').hidden=!staff;
+ $('.ul-study-settings').hidden=!backend;
  $('#ul-home-title').textContent=t('Olylife 비지니스를 하나의 앱으로.');
  root.querySelectorAll('.ul-app-nav button:not([hidden])').forEach(b=>b.style.flexBasis=available?'calc((100% - 24px)/4)':'calc((100% - 16px)/3)');
  const used=new Set(experiences.flatMap(x=>x.categories));const categories=[...new Set([...defaultExperienceCategories.filter(x=>used.has(x)||['치매','신장·방광','정력·성기능','여성 요실금'].includes(x)),...used])];
@@ -327,16 +368,16 @@ function renderExperiences(){
  const country=$('#ul-experience-country'),language=$('#ul-experience-language');
  for(const [select,key,label] of [[country,'country','전체 국가'],[language,'language','전체 언어']]){const selected=select.value;select.innerHTML='<option value="">'+t(label)+'</option>'+[...new Set(experiences.map(x=>x[key]).filter(Boolean))].sort().map(value=>'<option value="'+esc(value)+'">'+esc(value)+'</option>').join('');select.value=selected;}
  const query=$('#ul-experience-search').value.trim().toLowerCase();
- const media=$('#ul-case-media').value,visibility=auth.authenticated?$('#ul-case-visibility').value:'public';
+ const media=$('#ul-case-media').value,visibility=teamPage?'admin':staff?$('#ul-case-visibility').value:'public';
  const matching=experiences.filter(x=>(!visibility||x.visibility===visibility)&&(!media||x.media_type===media)&&(!experienceCategory||x.categories.includes(experienceCategory))&&(!country.value||x.country===country.value)&&(!language.value||x.language===language.value)&&(!query||[x.id,x.title,x.country,x.summary,...x.categories].join(' ').toLowerCase().includes(query)));
  const selection=curationCounts(matching,experienceCategory,caseCuration);
  $('#ul-case-curation').hidden=!selection;
- $('#ul-case-curation-label').hidden=!auth.authenticated;
- $('#ul-case-curation-view').value=auth.authenticated?caseCurationView:'representative';
- $('#ul-case-curation-summary').textContent=selection?(locale==='ko'?'대표 편집본 40초 이내 · '+selection.representative+'건'+(auth.authenticated?' · 후보 '+selection.candidate+'건':''):selection.representative+' edited clips · up to 40 seconds'+(auth.authenticated?' · '+selection.candidate+' candidates':'')):'';
- const list=curateCases(matching,experienceCategory,caseCurationView,auth.authenticated,caseCuration);
+ $('#ul-case-curation-label').hidden=!staff;
+ $('#ul-case-curation-view').value=staff?caseCurationView:'representative';
+ $('#ul-case-curation-summary').textContent=selection?(locale==='ko'?'대표 편집본 40초 이내 · '+selection.representative+'건'+(staff?' · 후보 '+selection.candidate+'건':''):selection.representative+' edited clips · up to 40 seconds'+(staff?' · '+selection.candidate+' candidates':'')):'';
+ const list=curateCases(matching,experienceCategory,caseCurationView,staff,caseCuration);
  $('#ul-case-count').textContent=locale==='ko'?'사례 '+list.length+'건 · 영상 '+list.filter(x=>x.media_type==='video').length+'건 · 글 '+list.filter(x=>x.media_type!=='video').length+'건':list.length+' cases';
- $('#ul-experience-list').innerHTML=experiencesLoading?'<p class="ul-sub">'+t('사례를 불러오는 중입니다.')+'</p>':experiencesFailed?'<p class="ul-sub">'+t('사례를 불러오지 못했습니다.')+'</p>':list.length?list.map(x=>'<article class="ul-item"><span class="ul-tag">'+esc([x.country,x.language].filter(Boolean).join(' · '))+'</span><h3>'+esc(x.title)+'</h3>'+(auth.authenticated?'<p class="ul-meta">'+esc(x.id)+' · '+esc(x.visibility==='public'?'공개':'관리자 전용')+'</p>':'')+(x.summary?'<span class="ul-tag">'+t('한국어 요약')+'</span><p class="ul-case-summary">'+esc(x.summary)+'</p>':'')+(x.video_url?(auth.authenticated&&/^OLY-\d{3}$/.test(x.id)?'<button type="button" data-case-subtitle="'+esc(x.id)+'">한국어 자막영상</button>':'')+'<a class="ul-kakao-link" href="'+esc(x.video_url)+'" target="_blank" rel="noopener noreferrer">'+t('원문 영상')+'</a>':'')+(x.url?'<button type="button" data-copy-experience="'+esc(x.id)+'">'+t('원문 링크복사')+'</button>':'')+(auth.authenticated?'<p class="ul-meta">'+esc(x.review_status)+'</p><button type="button" data-case-edit="'+esc(x.id)+'">사례 수정 · 공개 설정</button>':'')+'</article>').join(''):'<p class="ul-sub">'+t(experiences.length?'조건에 맞는 사례가 없습니다.':'등록된 사례가 없습니다.')+'</p>';
+ $('#ul-experience-list').innerHTML=experiencesLoading?'<p class="ul-sub">'+t('사례를 불러오는 중입니다.')+'</p>':experiencesFailed?'<p class="ul-sub">'+t('사례를 불러오지 못했습니다.')+'</p>':list.length?list.map(x=>'<article class="ul-item"><span class="ul-tag">'+esc([x.country,x.language].filter(Boolean).join(' · '))+'</span><h3>'+esc(x.title)+'</h3>'+(staff?'<p class="ul-meta">'+esc(x.id)+' · '+esc(x.visibility==='public'?'공개':'관리자 전용')+'</p>':'')+(x.summary?'<span class="ul-tag">'+t('한국어 요약')+'</span><p class="ul-case-summary">'+esc(x.summary)+'</p>':'')+(x.video_url?((staff||canViewStudy())&&/^OLY-\d{3}$/.test(x.id)?'<button type="button" data-case-subtitle="'+esc(x.id)+'">한국어 자막영상</button>':'')+'<a class="ul-kakao-link" href="'+esc(x.video_url)+'" target="_blank" rel="noopener noreferrer">'+t('원문 영상')+'</a>':'')+(x.url?'<button type="button" data-copy-experience="'+esc(x.id)+'">'+t('원문 링크복사')+'</button>':'')+(staff?'<p class="ul-meta">'+esc(x.review_status)+'</p><button type="button" data-case-edit="'+esc(x.id)+'">사례 수정 · 공개 설정</button>':'')+'</article>').join(''):'<p class="ul-sub">'+t(experiences.length?'조건에 맞는 사례가 없습니다.':'등록된 사례가 없습니다.')+'</p>';
  showCurationLabels(list);
 }
 function showCurationLabels(list) {
@@ -397,17 +438,17 @@ $('#ul-import-local').addEventListener('click',async()=>{
 let subtitlePlayer=null,subtitlePreparation=null,subtitleRequest=0,subtitleDialog=null,subtitleFocus=null;
 function closeSubtitles(){++subtitleRequest;try{subtitlePlayer?.destroy();subtitlePreparation?.destroy();}catch{}subtitlePlayer=null;subtitlePreparation=null;if(subtitleDialog){subtitleDialog.close();subtitleDialog.remove();subtitleDialog=null;}subtitleFocus?.focus();subtitleFocus=null;}
 async function openSubtitles(id,button){
- if(!auth.authenticated)return;closeSubtitles();const request=++subtitleRequest;subtitleFocus=button;
+ if(teamPage?!canViewStudy():!auth.authenticated)return;closeSubtitles();const request=++subtitleRequest;subtitleFocus=button;
  const selection=getCaseCuration(id,experienceCategory,caseCuration),excerpt=selection?.excerpt;
  const dialog=document.createElement('dialog');dialog.className='oly-subtitle-dialog';dialog.setAttribute('aria-label','한국어 자막 영상');
  const close=document.createElement('button');close.type='button';close.textContent='닫기';close.className='os-close';
  const content=document.createElement('div');dialog.append(close,content);document.body.append(dialog);subtitleDialog=dialog;dialog.showModal();close.focus();
  close.addEventListener('click',closeSubtitles);dialog.addEventListener('cancel',event=>{event.preventDefault();closeSubtitles();});
  if(!selection?.usesPrivateEdit)subtitlePreparation=subtitleModule.prepareSubtitlePlayer(content,experiences.find(row=>row.id===id)||{});
- try{const data=await api('/api/experiences/'+id+'/subtitles');if(request!==subtitleRequest||!auth.authenticated)return;subtitlePlayer=subtitleModule.mountSubtitlePlayer(content,data,{prepared:subtitlePreparation,mediaUrl:data.mediaUrl,excerpt,selectionLabel:selection?.label});subtitlePreparation=null;}
+ try{const data=await api('/api/experiences/'+(teamPage?'study/':'')+id+'/subtitles');if(request!==subtitleRequest||(teamPage?!canViewStudy():!auth.authenticated))return;subtitlePlayer=subtitleModule.mountSubtitlePlayer(content,data,{prepared:subtitlePreparation,mediaUrl:data.mediaUrl,excerpt,selectionLabel:selection?.label,studyOnly:teamPage});subtitlePreparation=null;}
  catch(error){if(request===subtitleRequest){subtitlePreparation?.destroy();subtitlePreparation=null;content.textContent=error.message;if(error.status===401){clearCases();auth.authenticated=false;applyLocale();show('auth');}}}
 }
-root.addEventListener('click',event=>{const button=event.target.closest('[data-case-subtitle]');if(button&&auth.authenticated)openSubtitles(button.dataset.caseSubtitle,button);});
+root.addEventListener('click',event=>{const button=event.target.closest('[data-case-subtitle]');if(button)openSubtitles(button.dataset.caseSubtitle,button);});
 
 if(adminMode&&new URLSearchParams(location.search).get('playback-audit')==='1'){
  const {installPlaybackAudit}=await import('./playback-audit.js?v=20261022-direct-open-v1');

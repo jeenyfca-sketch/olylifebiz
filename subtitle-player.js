@@ -88,7 +88,7 @@ export function mountSubtitlePlayer(container,input,options={}){
     try{
       if(isNativeSubtitle(data)||data.platform==='Substack'||options.mediaUrl||data.mediaUrl){
         wrapper.dataset.playbackKind='private-media';
-        const video=node('video');video.controls=true;video.playsInline=true;video.preload='metadata';video.setAttribute('controlslist','nofullscreen noremoteplayback');video.disablePictureInPicture=true;
+        const video=node('video');video.controls=true;video.playsInline=true;video.preload='metadata';video.setAttribute('controlslist','nofullscreen noremoteplayback'+(options.studyOnly?' nodownload':''));video.disablePictureInPicture=true;
         video.muted=options.muted===true;video.src=data.platform==='Substack'?embedSource(data,location.origin):checkedMediaUrl(options.mediaUrl||data.mediaUrl,data.caseId,location.origin);frame.append(video);
         adapter=createNativeSubtitleAdapter(video,data,{onReady:()=>{if(!disposed)ready();},onTime:seconds=>render(seconds),
           onPlay:()=>{if(disposed)return;played=true;wrapper.dataset.playbackState='playing';message(burnedIn?'':'영상이 재생 중입니다. 영상 아래에서 한국어 자막을 확인하세요.');},
