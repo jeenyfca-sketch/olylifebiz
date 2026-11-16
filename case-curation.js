@@ -1591,6 +1591,92 @@ const editedSelections = {
   ]
 };
 
+const supplementalStudyEdits = {
+  "혈압·혈당·대사": [
+    "OLY-651",
+    "OLY-672"
+  ],
+  "얼굴·귀·코·턱": [
+    "OLY-652",
+    "OLY-661"
+  ],
+  "스트레스": [
+    "OLY-653",
+    "OLY-654"
+  ],
+  "눈·시야": [
+    "OLY-655"
+  ],
+  "운동·회복": [
+    "OLY-656",
+    "OLY-676"
+  ],
+  "손·팔": [
+    "OLY-657"
+  ],
+  "온감·냉감": [
+    "OLY-658"
+  ],
+  "기분·활력": [
+    "OLY-659"
+  ],
+  "사용감·불편": [
+    "OLY-660"
+  ],
+  "연전현상": [
+    "OLY-662",
+    "OLY-668"
+  ],
+  "뇌·두통": [
+    "OLY-663",
+    "OLY-670"
+  ],
+  "다이어트": [
+    "OLY-664",
+    "OLY-665"
+  ],
+  "소화·배변": [
+    "OLY-666",
+    "OLY-686"
+  ],
+  "피부": [
+    "OLY-667",
+    "OLY-671"
+  ],
+  "신경·저림·경련": [
+    "OLY-669",
+    "OLY-677"
+  ],
+  "파킨슨 관련": [
+    "OLY-673",
+    "OLY-674"
+  ],
+  "류마티스": [
+    "OLY-675"
+  ],
+  "신장·방광": [
+    "OLY-678",
+    "OLY-683"
+  ],
+  "생리 관련": [
+    "OLY-679",
+    "OLY-681"
+  ],
+  "호흡·기침": [
+    "OLY-680",
+    "OLY-685"
+  ],
+  "혈액검사·수치": [
+    "OLY-682",
+    "OLY-687"
+  ],
+  "여성 요실금": [
+    "OLY-684",
+    "OLY-688"
+  ]
+};
+for (const [topic, ids] of Object.entries(supplementalStudyEdits)) editedSelections[topic].push(...ids);
+
 // Keep the source catalog and use the uploaded edits for the current representative view.
 export const editedCaseCuration = Object.fromEntries(Object.entries(caseCuration).map(([topic, source]) => {
   const representatives=editedSelections[topic];
