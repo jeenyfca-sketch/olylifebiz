@@ -1476,16 +1476,13 @@ export const removedStudyEdits = new Set([
   "OLY-638",
   "OLY-646",
   "OLY-649",
-  "OLY-650",
   "OLY-651",
   "OLY-652",
   "OLY-653",
   "OLY-659",
   "OLY-661",
-  "OLY-662",
   "OLY-663",
   "OLY-667",
-  "OLY-668",
   "OLY-669",
   "OLY-670",
   "OLY-674",
@@ -1632,7 +1629,11 @@ const editedSelections = {
     "OLY-608",
     "OLY-633"
   ],
-  "연전현상": [],
+  "연전현상": [
+    "OLY-662",
+    "OLY-650",
+    "OLY-668"
+  ],
   "사용감·불편": [
     "OLY-660",
     "OLY-619",
