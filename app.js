@@ -10,6 +10,8 @@ function normalizeMeetingLink(raw) {
 const backend = await window.olyCloudReady;
 const {normalizeCases} = await import(new URL('./case-catalog.js?v=categories5',document.baseURI));
 const {editedCaseCuration:caseCuration,getCaseCuration,curateCases,curationCounts,removedStudyEdits} = await import(new URL('./case-curation.js?v=6bfb55cffc7c',document.baseURI));
+const {allCaseVideos,allGroupCases,caseBrowseGroups,caseBrowseTranslations,getCaseBrowseScope,getCaseBrowseSearchLabels,getCaseBrowseTags,productUseCases} =
+  await import(new URL('./case-browse.js?v=fa00424a382e',document.baseURI));
 const {sourceWatchUrl} = await import(new URL('./subtitle-data.js?v=20261025-edited-clip-v1',document.baseURI));
 const subtitleModule = await import(new URL('./subtitle-player.js?v=20261115-study-view',document.baseURI));
 const {getMaterialVideos} = await import(new URL('./material-videos.js?v=1',document.baseURI));
@@ -43,6 +45,10 @@ if (casesOnly) {
 }
 const inquiryUrl = $('.ul-direct-inquiry').href;
 const translations={
+ ...caseBrowseTranslations,
+ '체험사례 탐색':['Browse experiences','体験談を見る','浏览体验案例'],
+ '바로가기':['Quick links','ショートカット','快捷入口'],
+ '세부 증상':['Symptoms','症状の詳細','具体症状'],
  '안드로이드 앱 설치':['Install Android app','Androidアプリをインストール','安装安卓应用'],
  '안드로이드 10 이상 · APK 파일 다운로드':['Android 10 or later · Download APK','Android 10以降 · APKをダウンロード','安卓10及以上 · 下载APK文件'],
  'QR 보기':['Show QR','QRを表示','显示二维码'],
@@ -216,9 +222,9 @@ const t=key=>locale==='ko'?key:(translations[key]?.[{en:0,ja:1,zh:2}[locale]]??k
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const knownLocales=['ko','en','ja','zh'];
 let locale='ko';try { const saved=localStorage.getItem('olylife_locale');if(knownLocales.includes(saved))locale=saved; } catch {}
-let experiences=[],experiencesLoaded=false,experiencesLoading=false,experiencesFailed=false,experienceCategory='',caseEditId=null,caseRequest=0;
+let experiences=[],experiencesLoaded=false,experiencesLoading=false,experiencesFailed=false,experienceCategory='',experienceDetail='',caseEditId=null,caseRequest=0;
 let caseCurationView='representative';
-const defaultExperienceCategories=Object.keys(caseCuration);
+const caseBrowseTags=new WeakMap();
 let materials=[],meetings=[],auth={initialized:!!backend,authenticated:false,signedIn:false},section='home',editId=null,meetingEditId=null,detailId=null,authRequest=0;
 let studyAccess={allowed:false,accepted:false};
 const canViewStudy=()=>teamPage&&studyAccess.accepted;
@@ -356,34 +362,72 @@ async function loadExperiences(){
  try{const data=await api(teamPage?'/api/experiences/study':auth.authenticated?'/api/experiences/admin':'/api/experiences');if(request!==caseRequest)return;if(!Array.isArray(data))throw new Error('catalog');experiences=normalizeCases(data).filter(item=>!removedStudyEdits.has(item.id));experiencesLoaded=true;
  }catch{if(request===caseRequest){experiences=[];experiencesFailed=true;}}finally{if(request===caseRequest){experiencesLoading=false;renderExperiences();}}
 }
+function browseTagsFor(item){
+ if(!caseBrowseTags.has(item))caseBrowseTags.set(item,getCaseBrowseTags(item));
+ return caseBrowseTags.get(item);
+}
+function renderCaseButtons(container,attribute,options,selected){
+ const html=options.map(({id,label})=>'<button type="button" '+attribute+'="'+esc(id)+'" aria-pressed="'+String(id===selected)+'" aria-controls="ul-experience-list">'+esc(t(label))+'</button>').join('');
+ if(container.innerHTML===html)return;
+ const focused=container.contains(document.activeElement)?document.activeElement.getAttribute(attribute):null;
+ container.innerHTML=html;
+ if(focused!==null){
+  Array.from(container.children).find(button=>button.getAttribute(attribute)===focused)?.focus({preventScroll:true});
+ }
+}
+function renderCaseNavigation(){
+ const details=$('#ul-experience-details');
+ const group=caseBrowseGroups.find(entry=>entry.id===experienceCategory);
+ renderCaseButtons($('#ul-experience-shortcuts'),'data-case-category',[allCaseVideos,productUseCases],experienceCategory);
+ renderCaseButtons($('#ul-experience-categories'),'data-case-category',caseBrowseGroups,experienceCategory);
+ renderCaseButtons(details,'data-case-detail',group?[allGroupCases,...group.details]:[],experienceDetail);
+ details.hidden=!group;
+}
+function caseBrowseSelection(item,scope=getCaseBrowseScope(experienceCategory,experienceDetail)){
+ const overall=getCaseCuration(item.id,'',caseCuration);
+ if(!scope&&overall.state==='representative')return overall;
+ const topics=scope?.legacy.length?scope.legacy:item.categories;
+ const relevant=topics.filter(topic=>item.categories.includes(topic)&&caseCuration[topic])
+   .map(topic=>getCaseCuration(item.id,topic,caseCuration));
+ return relevant.find(selection=>selection.state==='representative') ??
+    (overall.state==='representative'?overall:relevant[0]??overall);
+}
 function renderExperiences(){
  const staff=auth.authenticated&&!teamPage,available=staff||canViewStudy()||experiences.some(x=>x.visibility==='public');
  $('#ul-cases-nav').hidden=!available;$('#ul-home-cases').hidden=!available;$('#ul-case-tools').hidden=!staff;
  $('.ul-study-settings').hidden=!backend;
  $('#ul-home-title').textContent=t('Olylife 비지니스를 하나의 앱으로.');
  root.querySelectorAll('.ul-app-nav button:not([hidden])').forEach(b=>b.style.flexBasis=available?'calc((100% - 24px)/4)':'calc((100% - 16px)/3)');
- const used=new Set(experiences.flatMap(x=>x.categories));const categories=[...new Set([...defaultExperienceCategories,...used])];
- $('#ul-experience-categories').innerHTML=[['','전체'],...categories.map(value=>[value,value])].map(([value,label])=>'<button type="button" data-case-category="'+esc(value)+'" aria-pressed="'+String(value===experienceCategory)+'">'+esc(t(label))+'</button>').join('');
+ renderCaseNavigation();
 
  const country=$('#ul-experience-country'),language=$('#ul-experience-language');
  for(const [select,key,label] of [[country,'country','전체 국가'],[language,'language','전체 언어']]){const selected=select.value;select.innerHTML='<option value="">'+t(label)+'</option>'+[...new Set(experiences.map(x=>x[key]).filter(Boolean))].sort().map(value=>'<option value="'+esc(value)+'">'+esc(value)+'</option>').join('');select.value=selected;}
  const query=$('#ul-experience-search').value.trim().toLowerCase();
  const media=$('#ul-case-media').value,visibility=teamPage?'admin':staff?$('#ul-case-visibility').value:'public';
- const matching=experiences.filter(x=>(!visibility||x.visibility===visibility)&&(!media||x.media_type===media)&&(!experienceCategory||x.categories.includes(experienceCategory))&&(!country.value||x.country===country.value)&&(!language.value||x.language===language.value)&&(!query||[x.id,x.title,x.country,x.summary,...x.categories].join(' ').toLowerCase().includes(query)));
- const selection=curationCounts(matching,experienceCategory,caseCuration);
+ const scope=getCaseBrowseScope(experienceCategory,experienceDetail);
+ const matching=experiences.filter(item=>{
+  if((visibility&&item.visibility!==visibility)||(media&&item.media_type!==media)||(country.value&&item.country!==country.value)||(language.value&&item.language!==language.value))return false;
+  if(!scope&&!query)return true;
+  const tags=browseTagsFor(item);
+  if(scope&&!tags.has(scope.id))return false;
+  return !query||[item.id,item.title,item.country,item.summary,...item.categories,...getCaseBrowseSearchLabels(tags)].join(' ').toLowerCase().includes(query);
+ });
+ const selection=curationCounts(matching,'',caseCuration);
  $('#ul-case-curation').hidden=!selection;
  $('#ul-case-curation-label').hidden=!staff;
  $('#ul-case-curation-view').value=staff?caseCurationView:'representative';
  $('#ul-case-curation-summary').textContent=selection?(locale==='ko'?'대표 편집본 40초 이내 · '+selection.representative+'건'+(staff?' · 후보 '+selection.candidate+'건':''):selection.representative+' edited clips · up to 40 seconds'+(staff?' · '+selection.candidate+' candidates':'')):'';
- const list=curateCases(matching,experienceCategory,caseCurationView,staff,caseCuration);
+ const list=curateCases(matching,'',caseCurationView,staff,caseCuration);
+ const selections=new Map(list.map(item=>[item.id,caseBrowseSelection(item,scope)]));
+ if(scope)list.sort((a,b)=>(selections.get(a.id).rank??Infinity)-(selections.get(b.id).rank??Infinity));
  $('#ul-case-count').textContent=locale==='ko'?'사례 '+list.length+'건 · 영상 '+list.filter(x=>x.media_type==='video').length+'건 · 글 '+list.filter(x=>x.media_type!=='video').length+'건':list.length+' cases';
  $('#ul-experience-list').innerHTML=experiencesLoading?'<p class="ul-sub">'+t('사례를 불러오는 중입니다.')+'</p>':experiencesFailed?'<p class="ul-sub">'+t('사례를 불러오지 못했습니다.')+'</p>':list.length?list.map(x=>'<article class="ul-item"><span class="ul-tag">'+esc([x.country,x.language].filter(Boolean).join(' · '))+'</span><h3>'+esc(x.title)+'</h3>'+(staff?'<p class="ul-meta">'+esc(x.id)+' · '+esc(x.visibility==='public'?'공개':'관리자 전용')+'</p>':'')+(x.summary?'<span class="ul-tag">'+t('한국어 요약')+'</span><p class="ul-case-summary">'+esc(x.summary)+'</p>':'')+(x.video_url?((staff||canViewStudy())&&/^OLY-\d{3}$/.test(x.id)?'<button type="button" data-case-subtitle="'+esc(x.id)+'">한국어 자막영상</button>':'')+'<a class="ul-kakao-link" href="'+esc(x.video_url)+'" target="_blank" rel="noopener noreferrer">'+t('원문 영상')+'</a>':'')+(x.url?'<button type="button" data-copy-experience="'+esc(x.id)+'">'+t('원문 링크복사')+'</button>':'')+(staff?'<p class="ul-meta">'+esc(x.review_status)+'</p><button type="button" data-case-edit="'+esc(x.id)+'">사례 수정 · 공개 설정</button>':'')+'</article>').join(''):'<p class="ul-sub">'+t(experiences.length?'조건에 맞는 사례가 없습니다.':'등록된 사례가 없습니다.')+'</p>';
- showCurationLabels(list);
+ showCurationLabels(list,selections,Boolean(scope));
 }
-function showCurationLabels(list) {
+function showCurationLabels(list,selections,scoped) {
  $('#ul-experience-list').querySelectorAll('article').forEach((article,index)=>{
-  const selected=getCaseCuration(list[index].id,experienceCategory,caseCuration);if(!selected)return;
-  const label=selected.state==='representative'?'대표 '+selected.rank+(selected.label?' · '+selected.label:''):selected.state==='retained'?'등 자료':'후보 자료';
+  const selected=selections.get(list[index].id);
+  const label=selected.state==='representative'?'대표 '+(scoped?index+1:selected.rank)+(selected.label?' · '+selected.label:''):selected.state==='retained'?'등 자료':'후보 자료';
   const badge=document.createElement('span');badge.className='ul-tag';badge.textContent=label;
   article.querySelector('h3').before(badge);
   if(selected.image){
@@ -428,7 +472,17 @@ $('#ul-case-playback-upload').addEventListener('click',async()=>{
 });
 $('#ul-case-form').addEventListener('submit',async e=>{e.preventDefault();if(!auth.authenticated)return;const form=e.target,button=form.querySelector('[type="submit"]'),notice=$('#ul-case-notice');button.disabled=true;try{const input={id:caseEditId??crypto.randomUUID()};for(const key of ['title','summary','country','language','url','video_url','media_type','review_status','visibility'])input[key]=form.elements.namedItem(key).value;input.categories=form.elements.categories.value.split(/[,，]/).map(x=>x.trim()).filter(Boolean);await api('/api/experiences/admin',input);await refresh();notice.textContent=input.visibility==='public'?'공개로 저장했습니다.':'관리자 전용으로 저장했습니다.';}catch(error){notice.textContent=error.message;}finally{button.disabled=false;}});
 root.addEventListener('click',e=>{const button=e.target.closest('[data-case-edit]');if(button&&auth.authenticated)openCaseForm(experiences.find(x=>x.id===button.dataset.caseEdit));});
-root.addEventListener('click',async e=>{const category=e.target.closest('[data-case-category]');if(category){experienceCategory=category.dataset.caseCategory;caseCurationView='representative';renderExperiences();return;}const button=e.target.closest('[data-copy-experience]');if(!button)return;const item=experiences.find(x=>x.id===button.dataset.copyExperience);if(!item)return;const selected=getCaseCuration(item.id,experienceCategory,caseCuration),source=sourceWatchUrl(item.url,selected?.excerpt?.start);try{await navigator.clipboard.writeText(source);button.textContent=t('링크를 복사했습니다.');}catch{button.textContent=source;}});
+root.addEventListener('click',async e=>{
+ const category=e.target.closest('[data-case-category]');
+ const detail=e.target.closest('[data-case-detail]');
+ if(category){experienceCategory=category.dataset.caseCategory;experienceDetail='';caseCurationView='representative';}
+ if(detail)experienceDetail=detail.dataset.caseDetail;
+ if(category||detail){renderExperiences();return;}
+ const button=e.target.closest('[data-copy-experience]');if(!button)return;
+ const item=experiences.find(x=>x.id===button.dataset.copyExperience);if(!item)return;
+ const selected=caseBrowseSelection(item),source=sourceWatchUrl(item.url,selected?.excerpt?.start);
+ try{await navigator.clipboard.writeText(source);button.textContent=t('링크를 복사했습니다.');}catch{button.textContent=source;}
+});
 $('#ul-import-local').addEventListener('click',async()=>{
  const button=$('#ul-import-local'),notice=$('#ul-import-notice');button.disabled=true;notice.textContent='기존 자료와 미팅을 옮기는 중입니다…';
  try{const {data,error}=await backend.client.auth.getSession();if(error)throw error;const res=await fetch('/api/migrate-cloud',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accessToken:data.session?.access_token})});const result=await res.json();if(!res.ok)throw new Error(result.error);await refresh();notice.textContent='완료: 자료 '+result.materials+'개, 미팅 '+result.meetings+'개를 옮겼습니다.';}
@@ -439,12 +493,14 @@ let subtitlePlayer=null,subtitlePreparation=null,subtitleRequest=0,subtitleDialo
 function closeSubtitles(){++subtitleRequest;try{subtitlePlayer?.destroy();subtitlePreparation?.destroy();}catch{}subtitlePlayer=null;subtitlePreparation=null;if(subtitleDialog){subtitleDialog.close();subtitleDialog.remove();subtitleDialog=null;}subtitleFocus?.focus();subtitleFocus=null;}
 async function openSubtitles(id,button){
  if(teamPage?!canViewStudy():!auth.authenticated)return;closeSubtitles();const request=++subtitleRequest;subtitleFocus=button;
- const selection=getCaseCuration(id,experienceCategory,caseCuration),excerpt=selection?.excerpt;
+ const item=experiences.find(row=>row.id===id);
+ if(!item)return;
+ const selection=caseBrowseSelection(item),excerpt=selection?.excerpt;
  const dialog=document.createElement('dialog');dialog.className='oly-subtitle-dialog';dialog.setAttribute('aria-label','한국어 자막 영상');
  const close=document.createElement('button');close.type='button';close.textContent='닫기';close.className='os-close';
  const content=document.createElement('div');dialog.append(close,content);document.body.append(dialog);subtitleDialog=dialog;dialog.showModal();close.focus();
  close.addEventListener('click',closeSubtitles);dialog.addEventListener('cancel',event=>{event.preventDefault();closeSubtitles();});
- if(!selection?.usesPrivateEdit)subtitlePreparation=subtitleModule.prepareSubtitlePlayer(content,experiences.find(row=>row.id===id)||{});
+ if(!selection?.usesPrivateEdit)subtitlePreparation=subtitleModule.prepareSubtitlePlayer(content,item);
  try{const data=await api('/api/experiences/'+(teamPage?'study/':'')+id+'/subtitles');if(request!==subtitleRequest||(teamPage?!canViewStudy():!auth.authenticated))return;subtitlePlayer=subtitleModule.mountSubtitlePlayer(content,data,{prepared:subtitlePreparation,mediaUrl:data.mediaUrl,excerpt,selectionLabel:selection?.label,studyOnly:teamPage});subtitlePreparation=null;}
  catch(error){if(request===subtitleRequest){subtitlePreparation?.destroy();subtitlePreparation=null;content.textContent=error.message;if(error.status===401){clearCases();auth.authenticated=false;applyLocale();show('auth');}}}
 }

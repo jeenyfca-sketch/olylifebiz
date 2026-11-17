@@ -74,6 +74,11 @@
         </div>
         <div data-panel="experiences" hidden>
  <h2>글로벌 체험 사례</h2>
+ <div class="ul-case-browser" role="group" aria-label="체험사례 탐색">
+   <div id="ul-experience-shortcuts" class="ul-case-shortcuts ul-category-filter" role="group" aria-label="바로가기"></div>
+   <div id="ul-experience-categories" class="ul-case-groups ul-category-filter" role="group" aria-label="사례 분류"></div>
+   <div id="ul-experience-details" class="ul-case-details ul-category-filter" role="group" aria-label="세부 증상" hidden></div>
+ </div>
  <div id="ul-case-tools" hidden>
    <button id="ul-case-new" type="button">새 사례 등록</button>
    <form id="ul-case-form" hidden>
@@ -108,7 +113,6 @@
      </form>
    </details>
  </div>
- <div id="ul-experience-categories" class="ul-category-filter" role="group" aria-label="사례 분류"></div>
  <div id="ul-case-curation" hidden>
    <p id="ul-case-curation-summary" class="ul-sub" aria-live="polite"></p>
    <label id="ul-case-curation-label">자료 선택<select id="ul-case-curation-view"><option value="representative">대표 보기</option><option value="candidate">후보 보기</option><option value="all">전체 보기</option></select></label>
@@ -227,9 +231,14 @@ html[data-hana-view="study"] #ulilife-preview :is(.ul-app-nav,.ul-contact-action
 #ulilife-preview .ul-listhead {display:flex;justify-content:space-between;font-size:12px;color:var(--ul-muted);margin:10px 0 14px}
 #ulilife-preview .ul-item {background:var(--ul-paper);padding:16px;margin-bottom:12px;border-radius:var(--ul-radius);border:1px solid var(--ul-line)}
 #ulilife-preview .ul-item h3 {margin:8px 0;font-size:16px;line-height:1.5;overflow-wrap:anywhere}
-#ulilife-preview .ul-category-filter {display:flex;flex-wrap:wrap;gap:8px;margin:16px 0;}
-#ulilife-preview .ul-category-filter button {min-height:40px;padding:8px 12px;font-size:13px;}
-#ulilife-preview .ul-category-filter [aria-pressed="true"] {background:var(--ul-primary);border-color:var(--ul-primary);color:var(--ul-on);}
+#ulilife-preview .ul-case-browser {display:grid;gap:12px;margin:18px 0;}
+#ulilife-preview .ul-category-filter {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+#ulilife-preview .ul-category-filter button {min-width:0;min-height:44px;padding:8px 10px;font-size:14px;line-height:1.35;overflow-wrap:anywhere;}
+#ulilife-preview .ul-case-groups button {font-weight:700;}
+#ulilife-preview .ul-case-shortcuts button {background:var(--ul-soft);border-color:var(--ul-line);color:var(--ul-text);}
+#ulilife-preview .ul-case-details {padding:10px 0 0;border-top:1px solid var(--ul-line);}
+#ulilife-preview .ul-category-filter [aria-pressed="true"] {background:var(--ul-primary-hover);border-color:var(--ul-primary-hover);color:var(--ul-on);}
+#ulilife-preview .ul-category-filter [aria-pressed="false"]:hover {background:var(--ul-soft);}
 #ulilife-preview .ul-case-summary {font-size:14px;line-height:1.75;white-space:pre-line;overflow-wrap:anywhere;}
 #ulilife-preview .ul-case-photo {margin:12px 0 18px;}
 #ulilife-preview .ul-case-photo img {display:block;width:100%;height:auto;border-radius:10px;}
@@ -311,4 +320,4 @@ html,body {margin:0;background:#F4F7F8}
 #ulilife-preview #ul-kakao-qr-panel {color:var(--ul-text)}
 </style>
 
-<script src="./cloud.js?v=3369551c8d49"></script><script src="./app.js?v=b2310e2e3426"></script></body></html>
+<script src="./cloud.js?v=3369551c8d49"></script><script src="./app.js?v=b17895f45147"></script></body></html>
