@@ -1632,8 +1632,8 @@ const editedSelections = {
     "OLY-633"
   ],
   "연전현상": [
-    "OLY-650",
     "OLY-662",
+    "OLY-650",
     "OLY-668"
   ],
   "사용감·불편": [
