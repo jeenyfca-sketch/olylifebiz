@@ -9,7 +9,7 @@ function normalizeMeetingLink(raw) {
 (async () => {
 const backend = await window.olyCloudReady;
 const {normalizeCases} = await import(new URL('./case-catalog.js?v=categories5',document.baseURI));
-const {editedCaseCuration:caseCuration,getCaseCuration,curateCases,curationCounts} = await import(new URL('./case-curation.js?v=a9b1d3dae77f',document.baseURI));
+const {editedCaseCuration:caseCuration,getCaseCuration,curateCases,curationCounts,removedStudyEdits} = await import(new URL('./case-curation.js?v=f89f2aefe6eb',document.baseURI));
 const {sourceWatchUrl} = await import(new URL('./subtitle-data.js?v=20261025-edited-clip-v1',document.baseURI));
 const subtitleModule = await import(new URL('./subtitle-player.js?v=20261115-study-view',document.baseURI));
 const {getMaterialVideos} = await import(new URL('./material-videos.js?v=1',document.baseURI));
@@ -353,7 +353,7 @@ async function loadExperiences(){
  if(experiencesLoaded||experiencesLoading||(teamPage&&!canViewStudy()))return;
  const request=++caseRequest;
  experiencesLoading=true;experiencesFailed=false;renderExperiences();
- try{const data=await api(teamPage?'/api/experiences/study':auth.authenticated?'/api/experiences/admin':'/api/experiences');if(request!==caseRequest)return;if(!Array.isArray(data))throw new Error('catalog');experiences=normalizeCases(data);experiencesLoaded=true;
+ try{const data=await api(teamPage?'/api/experiences/study':auth.authenticated?'/api/experiences/admin':'/api/experiences');if(request!==caseRequest)return;if(!Array.isArray(data))throw new Error('catalog');experiences=normalizeCases(data).filter(item=>!removedStudyEdits.has(item.id));experiencesLoaded=true;
  }catch{if(request===caseRequest){experiences=[];experiencesFailed=true;}}finally{if(request===caseRequest){experiencesLoading=false;renderExperiences();}}
 }
 function renderExperiences(){
@@ -362,7 +362,7 @@ function renderExperiences(){
  $('.ul-study-settings').hidden=!backend;
  $('#ul-home-title').textContent=t('Olylife 비지니스를 하나의 앱으로.');
  root.querySelectorAll('.ul-app-nav button:not([hidden])').forEach(b=>b.style.flexBasis=available?'calc((100% - 24px)/4)':'calc((100% - 16px)/3)');
- const used=new Set(experiences.flatMap(x=>x.categories));const categories=[...new Set([...defaultExperienceCategories.filter(x=>used.has(x)||['치매','신장·방광','정력·성기능','여성 요실금'].includes(x)),...used])];
+ const used=new Set(experiences.flatMap(x=>x.categories));const categories=[...new Set([...defaultExperienceCategories,...used])];
  $('#ul-experience-categories').innerHTML=[['','전체'],...categories.map(value=>[value,value])].map(([value,label])=>'<button type="button" data-case-category="'+esc(value)+'" aria-pressed="'+String(value===experienceCategory)+'">'+esc(t(label))+'</button>').join('');
 
  const country=$('#ul-experience-country'),language=$('#ul-experience-language');
