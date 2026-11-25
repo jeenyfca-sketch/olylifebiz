@@ -1500,6 +1500,7 @@ export const reviewedDetailSelections = {
   'blood-sugar': ['OLY-689', 'OLY-690', 'OLY-691'],
   'blood-pressure': ['OLY-691', 'OLY-692', 'OLY-693'],
   'cold-hands-feet': ['OLY-695'],
+  'swelling': ['OLY-704', 'OLY-705', 'OLY-706', 'OLY-635', 'OLY-628'],
   'headache': ['OLY-698', 'OLY-699', 'OLY-700'],
   'falling-asleep': ['OLY-607', 'OLY-631', 'OLY-632']
 };
@@ -1579,6 +1580,9 @@ const editedSelections = {
     "OLY-633"
   ],
   "순환·붓기": [
+    "OLY-704",
+    "OLY-705",
+    "OLY-706",
     "OLY-634",
     "OLY-635",
     "OLY-628"

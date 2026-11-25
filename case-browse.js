@@ -30,7 +30,7 @@ export const caseBrowseGroups = [
   ], ['수면']),
   group('breath-swelling', ['숨참·붓기·냉감', 'Breathing, swelling & coldness', '息切れ・むくみ・冷え', '气短、肿胀与发冷'], [
     topic('breathing', ['숨참·기침', 'Breathlessness & coughing', '息切れ・せき', '气短与咳嗽'], ['호흡·기침']),
-    topic('swelling', ['다리·발 붓기', 'Leg & foot swelling', '脚・足のむくみ', '腿脚肿胀'], [], /(?:다리|발목|발|무릎).{0,8}(?:붓기|부종|부어)/),
+    topic('swelling', ['부종·붓기', 'Swelling', 'むくみ・腫れ', '水肿与肿胀'], ['다리·발 붓기'], /붓기|부종|(?:다리|발목|발|무릎|손|팔|얼굴).{0,8}(?:부기|부어|부었)/),
     topic('cold-hands-feet', ['손발 차가움', 'Cold hands & feet', '手足の冷え', '手脚冰冷'], [], /손발 차가움|(?:손발|손과 발|발이|손이).{0,8}차가|냉감/),
     topic('warmth', ['몸의 온감', 'Feeling warmer', '体の温かさ', '身体暖感'], [], /온감|따뜻|온기/)
   ], ['순환·붓기', '온감·냉감']),
