@@ -9,9 +9,9 @@ function normalizeMeetingLink(raw) {
 (async () => {
 const backend = await window.olyCloudReady;
 const {normalizeCases} = await import(new URL('./case-catalog.js?v=categories5',document.baseURI));
-const {editedCaseCuration:caseCuration,getCaseCuration,curateCases,curationCounts,removedStudyEdits} = await import(new URL('./case-curation.js?v=6bfb55cffc7c',document.baseURI));
+const {editedCaseCuration:caseCuration,getCaseCuration,curateCases,curationCounts,removedStudyEdits,reviewedDetailSelections,studyCaseIds} = await import(new URL('./case-curation.js?v=b2273d95f29d',document.baseURI));
 const {allCaseVideos,allGroupCases,caseBrowseGroups,caseBrowseTranslations,getCaseBrowseScope,getCaseBrowseSearchLabels,getCaseBrowseTags,productUseCases} =
-  await import(new URL('./case-browse.js?v=fa00424a382e',document.baseURI));
+  await import(new URL('./case-browse.js?v=8773697c0d96',document.baseURI));
 const {sourceWatchUrl} = await import(new URL('./subtitle-data.js?v=20261025-edited-clip-v1',document.baseURI));
 const subtitleModule = await import(new URL('./subtitle-player.js?v=20261115-study-view',document.baseURI));
 const {getMaterialVideos} = await import(new URL('./material-videos.js?v=1',document.baseURI));
@@ -363,7 +363,7 @@ async function loadExperiences(){
  }catch{if(request===caseRequest){experiences=[];experiencesFailed=true;}}finally{if(request===caseRequest){experiencesLoading=false;renderExperiences();}}
 }
 function browseTagsFor(item){
- if(!caseBrowseTags.has(item))caseBrowseTags.set(item,getCaseBrowseTags(item));
+ if(!caseBrowseTags.has(item))caseBrowseTags.set(item,getCaseBrowseTags(item,studyCaseIds.includes(item.id)?reviewedDetailSelections:undefined));
  return caseBrowseTags.get(item);
 }
 function renderCaseButtons(container,attribute,options,selected){
@@ -385,6 +385,8 @@ function renderCaseNavigation(){
 }
 function caseBrowseSelection(item,scope=getCaseBrowseScope(experienceCategory,experienceDetail)){
  const overall=getCaseCuration(item.id,'',caseCuration);
+ const reviewedRank=reviewedDetailSelections[scope?.id]?.indexOf(item.id) ?? -1;
+ if(reviewedRank>=0 && overall.state==='representative')return {...overall,rank:reviewedRank+1};
  if(!scope&&overall.state==='representative')return overall;
  const topics=scope?.legacy.length?scope.legacy:item.categories;
  const relevant=topics.filter(topic=>item.categories.includes(topic)&&caseCuration[topic])

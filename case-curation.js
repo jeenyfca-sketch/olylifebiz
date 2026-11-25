@@ -1468,6 +1468,8 @@ export const caseCuration = {
 };
 
 export const removedStudyEdits = new Set([
+  "OLY-605",
+  "OLY-672",
   "OLY-602",
   "OLY-609",
   "OLY-610",
@@ -1493,6 +1495,10 @@ export const removedStudyEdits = new Set([
   "OLY-685",
   "OLY-687"
 ]);
+
+export const reviewedDetailSelections = {
+  'blood-sugar': ['OLY-689', 'OLY-690']
+};
 
 const editedSelections = {
   "뇌·두통": [],
@@ -1573,7 +1579,8 @@ const editedSelections = {
     "OLY-628"
   ],
   "혈압·혈당·대사": [
-    "OLY-672"
+    "OLY-689",
+    "OLY-690"
   ],
   "혈액검사·수치": [],
   "소화·배변": [
@@ -1640,6 +1647,9 @@ const editedSelections = {
     "OLY-633"
   ]
 };
+
+export const studyCaseIds = [...new Set(Object.values(editedSelections).flat())]
+  .filter(id => !removedStudyEdits.has(id));
 
 // Keep the source catalog and use the uploaded edits for the current representative view.
 export const editedCaseCuration = Object.fromEntries(Object.entries(caseCuration).map(([topic, source]) => {

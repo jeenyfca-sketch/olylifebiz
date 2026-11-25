@@ -20,12 +20,10 @@ export const caseBrowseGroups = [
     topic('headache', ['두통·어지럼', 'Headache & dizziness', '頭痛・めまい', '头痛与头晕'], ['뇌·두통'], /두통|어지럼/),
     topic('focus-memory', ['집중·기억', 'Focus & memory', '集中・記憶', '专注与记忆'], ['기억·인지', '치매']),
     topic('vision', ['눈·시야', 'Eyes & vision', '目・視界', '眼睛与视野'], ['눈·시야']),
-    topic('ear-ringing', ['귀울림', 'Ringing in the ears', '耳鳴り', '耳鸣'], ['이명'], /귀울림|귀.{0,5}윙윙|이명/),
-    topic('nose-jaw', ['코·턱 불편', 'Nose & jaw discomfort', '鼻・あごの違和感', '鼻部与下颌不适'], [], /코막힘|턱.{0,5}(?:통증|불편)|입 벌리기/),
     topic('tingling-tremor', ['손발 저림·떨림', 'Tingling & tremors', '手足のしびれ・震え', '手脚麻木与颤抖'], ['신경·저림·경련', '파킨슨 관련'])
   ], ['얼굴·귀·코·턱']),
   group('sleep-mood', ['잠·기운·마음', 'Sleep, energy & mood', '睡眠・活力・気分', '睡眠、精力与情绪'], [
-    topic('falling-asleep', ['잠들기 어려움', 'Trouble falling asleep', '寝つきにくい', '难以入睡'], [], /잠들기|잠이 (?:안|잘 안) |불면|잠이 들기/),
+    topic('falling-asleep', ['수면', 'Sleep', '睡眠', '睡眠'], ['잠들기 어려움'], /잠들기|잠이 (?:안|잘 안) |불면|잠이 들기|숙면|수면/),
     topic('waking', ['자주 깸', 'Waking often', '何度も目が覚める', '频繁夜醒'], ['비뇨·야간뇨'], /밤.{0,5}(?:화장실|깼|깨는)|자주 깸|자다 깨|수면 시간/),
     topic('energy', ['피로·기운 저하', 'Fatigue & low energy', '疲れ・活力低下', '疲劳与精力不足'], ['기분·활력'], /피로|기운 저하|피곤|활력/),
     topic('stress', ['스트레스', 'Stress', 'ストレス', '压力'], ['스트레스'])
@@ -47,7 +45,7 @@ export const caseBrowseGroups = [
     topic('leakage', ['소변이 새는 불편', 'Urine leakage', '尿もれ', '漏尿'], ['여성 요실금'])
   ]),
   group('measurements', ['혈당·혈압·체중', 'Blood sugar, blood pressure & weight', '血糖・血圧・体重', '血糖、血压与体重'], [
-    topic('blood-sugar', ['혈당', 'Blood sugar', '血糖', '血糖'], [], /^[^\n]*(?:혈당|당화혈색소)/),
+    topic('blood-sugar', ['혈당(당뇨)', 'Blood sugar (diabetes)', '血糖（糖尿病）', '血糖（糖尿病）'], ['혈당'], /^[^\n]*(?:혈당|당뇨|당화혈색소)/),
     topic('blood-pressure', ['혈압', 'Blood pressure', '血圧', '血压'], [], /^[^\n]*혈압/),
     topic('weight', ['체중 변화', 'Weight changes', '体重の変化', '体重变化'], ['다이어트']),
     topic('test-values', ['검사 수치', 'Test results', '検査値', '检查数值'], ['혈액검사·수치']),
@@ -75,11 +73,14 @@ function hasTopic(item, entry, text) {
     Boolean(entry.words?.test(text));
 }
 
-export function getCaseBrowseTags(item) {
+export function getCaseBrowseTags(item, reviewedDetails = {}) {
   const text = item.title + '\n' + item.summary;
   const tags = new Set();
   for (const entry of caseBrowseGroups) {
-    const details = entry.details.filter(detail => hasTopic(item, detail, text));
+    const details = entry.details.filter(detail => {
+      const reviewed = reviewedDetails[detail.id];
+      return reviewed ? reviewed.includes(item.id) : hasTopic(item, detail, text);
+    });
     if (details.length || hasTopic(item, entry, text)) tags.add(entry.id);
     for (const detail of details) tags.add(detail.id);
   }
