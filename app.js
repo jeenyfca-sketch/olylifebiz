@@ -9,7 +9,7 @@ function normalizeMeetingLink(raw) {
 (async () => {
 const backend = await window.olyCloudReady;
 const {normalizeCases} = await import(new URL('./case-catalog.js?v=categories5',document.baseURI));
-const {editedCaseCuration:caseCuration,getCaseCuration,curateCases,curationCounts,removedStudyEdits,reviewedDetailSelections,studyCaseIds} = await import(new URL('./case-curation.js?v=188f41db4c37',document.baseURI));
+const {editedCaseCuration:caseCuration,getCaseCuration,curateCases,curationCounts,removedStudyEdits,reviewedDetailSelections,studyCaseIds} = await import(new URL('./case-curation.js?v=10ed1b1c65a8',document.baseURI));
 const {allCaseVideos,allGroupCases,caseBrowseGroups,caseBrowseTranslations,getCaseBrowseScope,getCaseBrowseSearchLabels,getCaseBrowseTags,productUseCases} =
   await import(new URL('./case-browse.js?v=8773697c0d96',document.baseURI));
 const {sourceWatchUrl} = await import(new URL('./subtitle-data.js?v=20261025-edited-clip-v1',document.baseURI));

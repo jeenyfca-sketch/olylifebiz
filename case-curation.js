@@ -1498,7 +1498,7 @@ export const removedStudyEdits = new Set([
 
 export const reviewedDetailSelections = {
   'blood-sugar': ['OLY-689', 'OLY-690', 'OLY-691'],
-  'blood-pressure': ['OLY-691', 'OLY-692'],
+  'blood-pressure': ['OLY-691', 'OLY-692', 'OLY-693'],
   'cold-hands-feet': ['OLY-695'],
   'headache': ['OLY-698', 'OLY-699', 'OLY-700'],
   'falling-asleep': ['OLY-607', 'OLY-631', 'OLY-632']
@@ -1587,7 +1587,8 @@ const editedSelections = {
     "OLY-689",
     "OLY-690",
     "OLY-691",
-    "OLY-692"
+    "OLY-692",
+    "OLY-693"
   ],
   "혈액검사·수치": [],
   "소화·배변": [
