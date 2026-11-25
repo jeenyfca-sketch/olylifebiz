@@ -48,13 +48,11 @@ export const caseBrowseGroups = [
     topic('blood-sugar', ['혈당(당뇨)', 'Blood sugar (diabetes)', '血糖（糖尿病）', '血糖（糖尿病）'], ['혈당'], /^[^\n]*(?:혈당|당뇨|당화혈색소)/),
     topic('blood-pressure', ['혈압', 'Blood pressure', '血圧', '血压'], [], /^[^\n]*혈압/),
     topic('weight', ['체중 변화', 'Weight changes', '体重の変化', '体重变化'], ['다이어트']),
-    topic('test-values', ['검사 수치', 'Test results', '検査値', '检查数值'], ['혈액검사·수치']),
     topic('rouleaux', ['연전현상', 'Red blood cell stacking', '赤血球の連銭形成', '红细胞缗钱状排列'], ['연전현상'])
-  ], ['혈압·혈당·대사']),
+  ], ['혈압·혈당·대사', '혈액검사·수치']),
   group('skin', ['피부', 'Skin', '肌', '皮肤'], [
     topic('skin-changes', ['피부 변화', 'Skin changes', '肌の変化', '皮肤变化'], ['피부']),
-    topic('wrinkles', ['주름', 'Wrinkles', 'しわ', '皱纹'], [], /주름/),
-    topic('elasticity', ['탄력', 'Elasticity', '弾力', '弹性'], [], /탄력/)
+    topic('wrinkles', ['주름', 'Wrinkles', 'しわ', '皱纹'], [], /주름/)
   ])
 ];
 
