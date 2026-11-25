@@ -1497,11 +1497,15 @@ export const removedStudyEdits = new Set([
 ]);
 
 export const reviewedDetailSelections = {
-  'blood-sugar': ['OLY-689', 'OLY-690']
+  'blood-sugar': ['OLY-689', 'OLY-690', 'OLY-691'],
+  'blood-pressure': ['OLY-691', 'OLY-692'],
+  'cold-hands-feet': ['OLY-695'],
+  'headache': ['OLY-698', 'OLY-699', 'OLY-700'],
+  'falling-asleep': ['OLY-607', 'OLY-631', 'OLY-632']
 };
 
 const editedSelections = {
-  "뇌·두통": [],
+  "뇌·두통": ["OLY-698", "OLY-699", "OLY-700"],
   "기억·인지": [
     "OLY-606",
     "OLY-605",
@@ -1569,6 +1573,7 @@ const editedSelections = {
     "OLY-608"
   ],
   "온감·냉감": [
+    "OLY-695",
     "OLY-658",
     "OLY-605",
     "OLY-633"
@@ -1580,7 +1585,9 @@ const editedSelections = {
   ],
   "혈압·혈당·대사": [
     "OLY-689",
-    "OLY-690"
+    "OLY-690",
+    "OLY-691",
+    "OLY-692"
   ],
   "혈액검사·수치": [],
   "소화·배변": [
